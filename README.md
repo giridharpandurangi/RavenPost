@@ -71,7 +71,16 @@ All of these are in `BepInEx/config/com.ravenpost.valheim.cfg` after the first l
 - `src/SendWindow.cs`: destination list and Send button next to the cargo slots
 - `src/Patches.cs`: Harmony patches for hover text and removal
 
-## Ideas for v0.2+
+## Ideas
 
-Route danger, perch upgrade
-tiers, multiplayer (server holds the deliveries, synced config).
+| Status | Feature | What it gives you | Effort |
+|---|---|---|---|
+| Done (v0.2) | Real perch look | Wooden post with a sitting raven next to the cargo box | Medium |
+| Done (v0.2) | Send window | Destination list and Send button next to the cargo slots | Medium |
+| Done (v0.3) | Raven food | Meals speed ravens up; hungry ravens fly slowly | Small |
+| Next | **Raven mail** | Mailbox on every perch: write notes, with or without cargo. Inbox shows from, day and message; read, delete, reply. Hover shows unread count | Medium |
+| Idea | Perch upgrades | Wooden, Bronze, Iron tiers: more cargo slots, faster ravens, longer range | Small–Medium |
+| Idea | Route danger | Storms or the Plains can delay a raven, rarely lose one (can be turned off) | Small |
+| Idea | Letter items | Craftable letters that keep their text, can be stored and collected | Medium |
+| Idea | Multiplayer | Send cargo and mail to friends' perches on a server | Large |
+| Idea | Publish on Thunderstore | Icon, manifest and description so others can install it with r2modman | Small |
