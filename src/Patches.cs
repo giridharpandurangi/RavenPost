@@ -15,6 +15,22 @@ namespace RavenPost
         }
     }
 
+    /// <summary>Using a food item from the hotbar while looking at a perch feeds the raven.</summary>
+    [HarmonyPatch(typeof(Container), nameof(Container.UseItem))]
+    internal static class ContainerUseItemPatch
+    {
+        private static bool Prefix(Container __instance, Humanoid user, ItemDrop.ItemData item, ref bool __result)
+        {
+            var perch = __instance.GetComponent<RavenPerch>();
+            if (!perch || !(user is Player player))
+            {
+                return true;
+            }
+            __result = perch.Feed(player, item);
+            return false;
+        }
+    }
+
     /// <summary>Don't let the player deconstruct a perch that still has deliveries waiting or in flight.</summary>
     [HarmonyPatch(typeof(Container), nameof(Container.CanBeRemoved))]
     internal static class ContainerCanBeRemovedPatch

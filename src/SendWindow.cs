@@ -29,6 +29,7 @@ namespace RavenPost
         private static Button s_prev;
         private static Button s_next;
         private static Button s_send;
+        private static Button s_feed;
 
         private static RavenPerch s_perch;
         private static int s_page;
@@ -91,7 +92,7 @@ namespace RavenPost
             }
 
             var rows = RowsPerPage;
-            float height = 70f + rows * RowHeight + 150f;
+            float height = 70f + rows * RowHeight + 170f;
 
             s_panel = GUIManager.Instance.CreateWoodpanel(gui.m_container, new Vector2(1f, 1f), new Vector2(1f, 1f),
                 Vector2.zero, Width, height, false);
@@ -124,10 +125,11 @@ namespace RavenPost
             s_pageLabel = AddText("", y, 16, Plain, 30f);
             y -= 46f;
 
-            s_info = AddText("", y, 16, Plain, 56f);
-            y -= 62f;
+            s_info = AddText("", y, 16, Plain, 70f);
+            y -= 74f;
 
-            s_send = AddButton("Send raven", new Vector2(0f, y), 180f, OnSendClicked);
+            s_feed = AddButton("Feed", new Vector2(-75f, y), 110f, OnFeedClicked);
+            s_send = AddButton("Send raven", new Vector2(65f, y), 140f, OnSendClicked);
             s_panel.SetActive(false);
             return true;
         }
@@ -189,17 +191,28 @@ namespace RavenPost
             s_pageLabel.text = paged ? $"{s_page + 1} / {pages}" : "";
 
             float weight = s_perch.CargoWeight;
+            s_feed.gameObject.SetActive(Plugin.UseFood.Value);
+            string meals = Plugin.UseFood.Value ? $"\n<size=14>{s_perch.MealsStatus}</size>" : "";
             if (selected == null)
             {
-                s_info.text = "Build another Raven Perch\nto send to.";
+                s_info.text = "Build another Raven Perch\nto send to." + meals;
                 s_send.interactable = false;
             }
             else
             {
-                float seconds = PostOffice.FlightSeconds(s_perch.DistanceTo(selected), weight);
+                float seconds = s_perch.FlightSecondsTo(selected);
                 s_info.text = $"To {PostOffice.GetName(selected)}: {PostOffice.FormatDuration(seconds)}\n" +
-                              $"<size=13>Cargo weight {weight:0.#}</size>";
-                s_send.interactable = weight > 0f || HasCargo();
+                              $"<size=13>Cargo weight {weight:0.#}</size>" + meals;
+                s_send.interactable = (weight > 0f || HasCargo()) && !s_perch.RefusesToFly;
+            }
+        }
+
+        private static void OnFeedClicked()
+        {
+            if (s_perch && Player.m_localPlayer)
+            {
+                s_perch.FeedBest(Player.m_localPlayer);
+                Refresh();
             }
         }
 

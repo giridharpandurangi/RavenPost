@@ -15,7 +15,7 @@ namespace RavenPost
     {
         public const string ModGuid = "com.ravenpost.valheim";
         public const string ModName = "Raven Post";
-        public const string ModVersion = "0.2.1";
+        public const string ModVersion = "0.3.0";
 
         public const string PerchPrefabName = "piece_ravenperch";
 
@@ -27,6 +27,14 @@ namespace RavenPost
         internal static ConfigEntry<bool> AllowNonTeleportable;
         internal static ConfigEntry<int> CargoWidth;
         internal static ConfigEntry<int> CargoHeight;
+        internal enum HungryBehaviour { FlySlowly, Refuse }
+
+        internal static ConfigEntry<bool> UseFood;
+        internal static ConfigEntry<HungryBehaviour> Hungry;
+        internal static ConfigEntry<float> HungrySpeed;
+        internal static ConfigEntry<int> MaxMeals;
+        internal static ConfigEntry<float> RawMeatSpeed;
+        internal static ConfigEntry<string> RawMeatItems;
         internal static ConfigEntry<KeyCode> NextDestinationKey;
         internal static ConfigEntry<KeyCode> SendKey;
         internal static ConfigEntry<KeyCode> RenameKey;
@@ -50,6 +58,19 @@ namespace RavenPost
                 "Cargo slots per row. Applies to perches after restarting the game.");
             CargoHeight = Config.Bind("Cargo", "CargoHeight", 2,
                 "Cargo rows. Applies to perches after restarting the game.");
+            UseFood = Config.Bind("Food", "UseFood", true,
+                "Ravens eat one stored meal per flight; better food flies faster. Turn off to ignore food entirely.");
+            Hungry = Config.Bind("Food", "HungryRaven", HungryBehaviour.FlySlowly,
+                "What a raven does with no meals stored: FlySlowly (at HungrySpeed) or Refuse to fly.");
+            HungrySpeed = Config.Bind("Food", "HungrySpeed", 0.5f,
+                "Speed multiplier for a hungry raven when HungryRaven = FlySlowly. 0.5 = takes twice as long.");
+            MaxMeals = Config.Bind("Food", "MaxMeals", 10,
+                "How many meals a perch can store.");
+            RawMeatSpeed = Config.Bind("Food", "RawMeatSpeed", 1.25f,
+                "Speed multiplier for raw meat. Cooked food uses its health value: 30 hp = x1.2, 60 = x1.4, 90+ = x1.6.");
+            RawMeatItems = Config.Bind("Food", "RawMeatItems",
+                "RawMeat,DeerMeat,NeckTail,WolfMeat,LoxMeat,SerpentMeat,BugMeat,HareMeat,ChickenMeat,AsksvinMeat,VoltureMeat,BoneMawSerpentMeat",
+                "Comma-separated item prefab names ravens eat raw.");
             NextDestinationKey = Config.Bind("Keys", "NextDestination", KeyCode.J,
                 "While looking at a perch: choose the next destination.");
             SendKey = Config.Bind("Keys", "Send", KeyCode.K,

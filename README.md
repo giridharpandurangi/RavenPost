@@ -1,4 +1,4 @@
-# Raven Post (v0.2)
+# Raven Post (v0.3)
 
 A Valheim mod: build Raven Perches at your bases, and ravens carry items between them.
 Single player only for now.
@@ -32,13 +32,18 @@ you like), so other mods can't get in the way.
 4. Open a perch (**E**). Put items in the cargo slots (2×2 by default).
 5. In the **Raven Post** window next to the cargo, click a destination, then **Send raven**.
    Shortcut without opening it: look at the perch, **J** picks the next destination, **K** sends.
-6. A raven flies off. When it lands you get a message in the top left, wherever you are.
+6. **Feed your raven**: look at the perch and press the hotbar number of a food, or click **Feed** in the
+   window (uses the best food you carry). A perch stores up to 10 meals; each flight eats the best one.
+7. A raven flies off. When it lands you get a message in the top left, wherever you are.
    The items appear in the destination perch the next time that area is loaded.
 
 ## Rules
 
 - Flight time: 10 s per 100 m (min 10 s), +50% per 100 weight of cargo. It uses in-game time, so
   sleeping speeds deliveries up and they pause while the game is closed.
+- Food speeds ravens up: cooked food by its health value (30 hp = x1.2, 60 = x1.4, 90+ = x1.6), raw meat
+  x1.25. A hungry raven flies at x0.5, or refuses to fly if `HungryRaven = Refuse`. `UseFood = false`
+  ignores food completely.
 - Ravens can carry ore and metal by default (`AllowNonTeleportable`).
 - If the destination is full, the rest waits in the perch until you make room.
 - A perch with deliveries waiting or in flight can't be deconstructed. If it gets destroyed anyway, the
@@ -62,10 +67,11 @@ All of these are in `BepInEx/config/com.ravenpost.valheim.cfg` after the first l
 - `src/PostOffice.cs`: finding perches, inbox save format, flight time
 - `src/RavenFlight.cs`: take-off and landing animations (visual only)
 - `src/PerchModel.cs`: builds the perch look from vanilla models
+- `src/RavenFood.cs`: what ravens eat, meal storage
 - `src/SendWindow.cs`: destination list and Send button next to the cargo slots
 - `src/Patches.cs`: Harmony patches for hover text and removal
 
 ## Ideas for v0.2+
 
-Raven food cost, route danger, perch upgrade
+Route danger, perch upgrade
 tiers, multiplayer (server holds the deliveries, synced config).

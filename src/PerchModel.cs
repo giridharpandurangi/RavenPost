@@ -142,16 +142,35 @@ namespace RavenPost
 
             foreach (var mf in part.GetComponentsInChildren<MeshFilter>(true))
             {
-                if (mf.GetComponent<MeshRenderer>())
+                if (mf.GetComponent<MeshRenderer>() && IsShown(mf.transform, part.transform))
                 {
                     Add(mf.sharedMesh, mf.transform);
                 }
             }
             foreach (var smr in part.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
-                Add(smr.sharedMesh, smr.transform);
+                if (IsShown(smr.transform, part.transform))
+                {
+                    Add(smr.sharedMesh, smr.transform);
+                }
             }
             return result;
+        }
+
+        /// <summary>
+        /// True unless something between <paramref name="t"/> and <paramref name="root"/> is switched off
+        /// (e.g. the bird's hidden flying model). Ignores whether the root itself is active.
+        /// </summary>
+        private static bool IsShown(Transform t, Transform root)
+        {
+            for (; t && t != root; t = t.parent)
+            {
+                if (!t.gameObject.activeSelf)
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }

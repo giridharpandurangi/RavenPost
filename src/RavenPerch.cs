@@ -74,6 +74,100 @@ namespace RavenPost
 
         public float CargoWeight => _container.GetInventory()?.GetTotalWeight() ?? 0f;
 
+        public List<float> Meals => Zdo != null ? RavenFood.ReadMeals(Zdo) : new List<float>();
+
+        /// <summary>Speed multiplier for the next flight: best stored meal, hungry speed, or 1 with food off.</summary>
+        public float NextMealSpeed
+        {
+            get
+            {
+                if (!Plugin.UseFood.Value)
+                {
+                    return 1f;
+                }
+                var meals = Meals;
+                return meals.Count > 0 ? meals[0] : Mathf.Max(0.05f, Plugin.HungrySpeed.Value);
+            }
+        }
+
+        public bool IsHungry => Plugin.UseFood.Value && Meals.Count == 0;
+
+        /// <summary>A hungry raven only refuses to fly when configured to.</summary>
+        public bool RefusesToFly => IsHungry && Plugin.Hungry.Value == Plugin.HungryBehaviour.Refuse;
+
+        /// <summary>Short status for hover text and the send window.</summary>
+        public string MealsStatus
+        {
+            get
+            {
+                if (!Plugin.UseFood.Value)
+                {
+                    return "";
+                }
+                var meals = Meals;
+                if (meals.Count > 0)
+                {
+                    return $"Meals: {meals.Count}/{Mathf.Max(1, Plugin.MaxMeals.Value)} (next {RavenFood.FormatSpeed(meals[0])} speed)";
+                }
+                return RefusesToFly
+                    ? "<color=#ff6060>Hungry - won't fly until fed</color>"
+                    : $"<color=#ff9a40>Hungry - flies slowly ({RavenFood.FormatSpeed(NextMealSpeed)})</color>";
+            }
+        }
+
+        /// <summary>Flight time to <paramref name="destination"/> with the current cargo and next meal.</summary>
+        public float FlightSecondsTo(ZDO destination) =>
+            PostOffice.FlightSeconds(DistanceTo(destination), CargoWeight) / NextMealSpeed;
+
+        /// <summary>Feeds one of <paramref name="item"/> from the player's inventory. False if ravens won't eat it.</summary>
+        public bool Feed(Player player, ItemDrop.ItemData item)
+        {
+            if (Zdo == null || !player)
+            {
+                return false;
+            }
+            float speed = RavenFood.SpeedFor(item);
+            if (speed <= 0f)
+            {
+                return false;
+            }
+            if (!_nview.IsOwner())
+            {
+                player.Message(MessageHud.MessageType.Center, "Someone else is using this perch");
+                return true;
+            }
+
+            var meals = Meals;
+            int max = Mathf.Max(1, Plugin.MaxMeals.Value);
+            if (meals.Count >= max)
+            {
+                player.Message(MessageHud.MessageType.Center, "The raven is full");
+                return true;
+            }
+            if (!player.GetInventory().RemoveOneItem(item))
+            {
+                return true;
+            }
+
+            meals.Add(speed);
+            RavenFood.WriteMeals(Zdo, meals);
+            player.Message(MessageHud.MessageType.Center, Localization.instance.Localize(
+                $"The raven ate {item.m_shared.m_name} ({RavenFood.FormatSpeed(speed)} speed) - {meals.Count}/{max} meals"));
+            return true;
+        }
+
+        /// <summary>Feeds the fastest food the player is carrying.</summary>
+        public void FeedBest(Player player)
+        {
+            var food = RavenFood.BestFood(player.GetInventory());
+            if (food == null)
+            {
+                player.Message(MessageHud.MessageType.Center, "You have nothing the raven will eat");
+                return;
+            }
+            Feed(player, food);
+        }
+
         public void NextDestination()
         {
             if (Zdo == null)
@@ -127,9 +221,17 @@ namespace RavenPost
                 }
             }
 
+            if (RefusesToFly)
+            {
+                player.Message(MessageHud.MessageType.Center, "Your raven is hungry - feed it first");
+                return;
+            }
+            var meals = Meals;
+            float mealSpeed = NextMealSpeed;
+
             float distance = Vector3.Distance(transform.position, destination.GetPosition());
             float weight = inventory.GetTotalWeight();
-            float seconds = PostOffice.FlightSeconds(distance, weight);
+            float seconds = PostOffice.FlightSeconds(distance, weight) / mealSpeed;
 
             var delivery = new Delivery
             {
@@ -146,13 +248,18 @@ namespace RavenPost
 
             // Only empty the cargo once the delivery is safely stored on the destination.
             inventory.RemoveAll();
+            if (Plugin.UseFood.Value && meals.Count > 0)
+            {
+                meals.RemoveAt(0);
+                RavenFood.WriteMeals(Zdo, meals);
+            }
 
             RavenFlight.Launch(SeatPosition, destination.GetPosition());
             HideSeatedRaven(RavenFlight.TakeOffSeconds + 4f);
             player.Message(MessageHud.MessageType.Center,
                 $"Raven sent to {PostOffice.GetName(destination)} - arrives in {PostOffice.FormatDuration(seconds)}");
             Plugin.Log.LogInfo($"Sent {items.Count} stack(s) from '{PerchName}' to '{PostOffice.GetName(destination)}', " +
-                               $"{distance:0} m, {weight:0.#} weight, {seconds:0} s");
+                               $"{distance:0} m, {weight:0.#} weight, meal {RavenFood.FormatSpeed(mealSpeed)}, {seconds:0} s");
         }
 
         private Transform SeatedRaven => transform.Find("RavenPost_PerchedRaven");
@@ -298,13 +405,18 @@ namespace RavenPost
             else
             {
                 float distance = Vector3.Distance(transform.position, destination.GetPosition());
-                float seconds = PostOffice.FlightSeconds(distance, _container.GetInventory()?.GetTotalWeight() ?? 0f);
+                float seconds = FlightSecondsTo(destination);
                 sb.Append($"\n[<color=yellow><b>{Plugin.NextDestinationKey.Value}</b></color>] To: {PostOffice.GetName(destination)} " +
                           $"({PostOffice.FormatDistance(distance)}, {PostOffice.FormatDuration(seconds)})" +
                           (destinations.Count > 1 ? $"  <color=grey>{destinations.FindIndex(z => z.m_uid == destination.m_uid) + 1}/{destinations.Count}</color>" : ""));
                 sb.Append($"\n[<color=yellow><b>{Plugin.SendKey.Value}</b></color>] Send cargo");
             }
             sb.Append($"\n[<color=yellow><b>{Plugin.RenameKey.Value}</b></color>] Rename");
+            if (Plugin.UseFood.Value)
+            {
+                sb.Append($"\n{MealsStatus}");
+                sb.Append("\n<color=grey>Use food from your hotbar on the perch to feed</color>");
+            }
 
             var inbox = PostOffice.ReadInbox(Zdo);
             if (inbox.Count > 0)
