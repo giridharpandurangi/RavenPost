@@ -182,8 +182,16 @@ namespace RavenPost
                         string key = $"{zdo.m_uid}:{d.ArriveAt}";
                         if (s_landingsShown.Add(key))
                         {
-                            RavenFlight.Land(zdo.GetPosition() + Vector3.up * 1.2f, d.FromPos,
-                                (float)System.Math.Max(0.5, d.ArriveAt - now));
+                            float seconds = (float)System.Math.Max(0.5, d.ArriveAt - now);
+                            var instance = ZNetScene.instance ? ZNetScene.instance.FindInstance(zdo) : null;
+                            var perch = instance ? instance.GetComponent<RavenPerch>() : null;
+                            Vector3 seat = perch ? perch.SeatPosition : zdo.GetPosition() + Vector3.up * 1.2f;
+                            // The landing bird takes the seat; the sitting raven reappears as it vanishes.
+                            if (perch)
+                            {
+                                perch.HideSeatedRaven(seconds);
+                            }
+                            RavenFlight.Land(seat, d.FromPos, seconds);
                         }
                     }
 

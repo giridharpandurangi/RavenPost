@@ -147,11 +147,46 @@ namespace RavenPost
             // Only empty the cargo once the delivery is safely stored on the destination.
             inventory.RemoveAll();
 
-            RavenFlight.Launch(transform.position + Vector3.up * 1.2f, destination.GetPosition());
+            RavenFlight.Launch(SeatPosition, destination.GetPosition());
+            HideSeatedRaven(RavenFlight.TakeOffSeconds + 4f);
             player.Message(MessageHud.MessageType.Center,
                 $"Raven sent to {PostOffice.GetName(destination)} - arrives in {PostOffice.FormatDuration(seconds)}");
             Plugin.Log.LogInfo($"Sent {items.Count} stack(s) from '{PerchName}' to '{PostOffice.GetName(destination)}', " +
                                $"{distance:0} m, {weight:0.#} weight, {seconds:0} s");
+        }
+
+        private Transform SeatedRaven => transform.Find("RavenPost_PerchedRaven");
+
+        /// <summary>Where the perched raven sits (top of the post), or above the box if there is none.</summary>
+        public Vector3 SeatPosition
+        {
+            get
+            {
+                var seated = SeatedRaven;
+                return seated ? seated.position : transform.position + Vector3.up * 1.2f;
+            }
+        }
+
+        /// <summary>Hides the sitting raven while it is away flying, so there's only ever one bird.</summary>
+        public void HideSeatedRaven(float seconds)
+        {
+            var seated = SeatedRaven;
+            if (!seated)
+            {
+                return;
+            }
+            seated.gameObject.SetActive(false);
+            CancelInvoke(nameof(ShowSeatedRaven));
+            Invoke(nameof(ShowSeatedRaven), seconds);
+        }
+
+        private void ShowSeatedRaven()
+        {
+            var seated = SeatedRaven;
+            if (seated)
+            {
+                seated.gameObject.SetActive(true);
+            }
         }
 
         /// <summary>Moves arrived deliveries into the cargo slots. Runs whenever the perch is loaded.</summary>

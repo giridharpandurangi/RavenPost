@@ -11,28 +11,38 @@ namespace RavenPost
     {
         public const float LandingSeconds = 6f;
 
-        private const float TakeOffSeconds = 12f;
+        public const float TakeOffSeconds = 12f;
         private const float CruiseSpeed = 5f;
         private const float ClimbSpeed = 1.6f;
         private const float CircleSeconds = 3f;
         private const float FadeSeconds = 1.5f;
         private const float LandingDistance = 30f;
         private const float LandingHeight = 14f;
-        private const float PerchedSeconds = 1.5f;
 
         // First one found is used. Names are checked at load and logged.
         private static readonly string[] s_candidatePrefabs = { "Crow", "Raven", "Seagal" };
 
-        private static GameObject s_template;
+        private static GameObject s_template;       // flying pose
+        private static GameObject s_perchedTemplate; // landed pose
         private static bool s_warned;
 
-        /// <summary>Stripped, inactive bird model; null if no bird prefab exists.</summary>
+        /// <summary>Stripped, inactive bird in its flying pose; null if no bird prefab exists.</summary>
         public static GameObject Template
         {
             get
             {
                 Prepare();
                 return s_template;
+            }
+        }
+
+        /// <summary>Stripped, inactive bird in its landed (sitting) pose; null if no bird prefab exists.</summary>
+        public static GameObject PerchedTemplate
+        {
+            get
+            {
+                Prepare();
+                return s_perchedTemplate;
             }
         }
 
@@ -77,21 +87,43 @@ namespace RavenPost
             var holder = new GameObject("RavenPost_Templates");
             holder.SetActive(false);
             Object.DontDestroyOnLoad(holder);
-            s_template = Object.Instantiate(source, holder.transform);
-            s_template.name = "RavenPost_Raven";
+            s_template = BuildTemplate(source, holder.transform, landed: false);
+            s_perchedTemplate = BuildTemplate(source, holder.transform, landed: true);
+        }
 
-            foreach (var behaviour in s_template.GetComponentsInChildren<MonoBehaviour>(true))
+        /// <summary>
+        /// Copies the bird without its game logic. Vanilla birds (RandomFlyingBird) either have separate
+        /// flying/landed models, or one model with a "flying" animator flag; pick the requested pose.
+        /// </summary>
+        private static GameObject BuildTemplate(GameObject source, Transform holder, bool landed)
+        {
+            var copy = Object.Instantiate(source, holder);
+            copy.name = landed ? "RavenPost_RavenPerched" : "RavenPost_Raven";
+
+            var bird = copy.GetComponent<RandomFlyingBird>();
+            bool singleModel = !bird || bird.m_singleModel || !bird.m_flyingModel || !bird.m_landedModel;
+            if (!singleModel)
+            {
+                bird.m_flyingModel.SetActive(!landed);
+                bird.m_landedModel.SetActive(landed);
+            }
+
+            foreach (var behaviour in copy.GetComponentsInChildren<MonoBehaviour>(true))
             {
                 Object.DestroyImmediate(behaviour);
             }
-            foreach (var collider in s_template.GetComponentsInChildren<Collider>(true))
+            foreach (var collider in copy.GetComponentsInChildren<Collider>(true))
             {
                 Object.DestroyImmediate(collider);
             }
-            foreach (var body in s_template.GetComponentsInChildren<Rigidbody>(true))
+            foreach (var body in copy.GetComponentsInChildren<Rigidbody>(true))
             {
                 Object.DestroyImmediate(body);
             }
+
+            var pose = copy.AddComponent<BirdPose>();
+            pose.Flying = !landed;
+            return copy;
         }
 
         private static RavenFlight Spawn(Vector3 position, Vector3 facing)
@@ -211,7 +243,11 @@ namespace RavenPost
             transform.position = pos;
             transform.rotation = Quaternion.LookRotation(_heading);
 
-            FadeAndExpire(_duration + PerchedSeconds);
+            // On touchdown the flying bird is swapped for the sitting one on the post.
+            if (_age >= _duration)
+            {
+                Destroy(gameObject);
+            }
         }
 
         private void FadeAndExpire(float lifetime)
@@ -225,6 +261,52 @@ namespace RavenPost
             if (left < FadeSeconds)
             {
                 transform.localScale = _baseScale * (left / FadeSeconds);
+            }
+        }
+    }
+
+    /// <summary>Holds the bird's animator in a flying or landed pose.</summary>
+    internal class BirdPose : MonoBehaviour
+    {
+        private static readonly int s_flyingHash = Animator.StringToHash("flying");
+        private static readonly int s_flappingHash = Animator.StringToHash("flapping");
+
+        public bool Flying;
+
+        private Animator _animator;
+        private bool _hasFlying;
+        private bool _hasFlapping;
+
+        private void Start()
+        {
+            _animator = GetComponentInChildren<Animator>();
+            if (!_animator)
+            {
+                return;
+            }
+            foreach (var p in _animator.parameters)
+            {
+                _hasFlying |= p.nameHash == s_flyingHash;
+                _hasFlapping |= p.nameHash == s_flappingHash;
+            }
+            Apply();
+        }
+
+        private void Update() => Apply();
+
+        private void Apply()
+        {
+            if (!_animator || !_animator.isActiveAndEnabled)
+            {
+                return;
+            }
+            if (_hasFlying)
+            {
+                _animator.SetBool(s_flyingHash, Flying);
+            }
+            if (_hasFlapping)
+            {
+                _animator.SetBool(s_flappingHash, Flying);
             }
         }
     }

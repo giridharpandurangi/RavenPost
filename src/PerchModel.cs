@@ -10,8 +10,9 @@ namespace RavenPost
     internal static class PerchModel
     {
         private static readonly string[] s_poleCandidates = { "wood_pole2", "wood_pole", "wood_pole_log" };
-        private const float PoleHeight = 1.9f;
-        private const float BirdScale = 1.4f;
+        private const float PoleHeight = 1.7f;
+        private const float PoleThickness = 0.2f;
+        private const float BirdScale = 1.0f;
 
         public static void Decorate(GameObject perch)
         {
@@ -60,8 +61,10 @@ namespace RavenPost
                 return null;
             }
 
-            float scaleY = PoleHeight / b.size.y;
-            pole.transform.localScale = new Vector3(1f, scaleY, 1f);
+            // Force a slim post whatever the source model's proportions are.
+            float thickest = Mathf.Max(b.size.x, b.size.z, 0.01f);
+            float scaleXZ = PoleThickness / thickest;
+            pole.transform.localScale = new Vector3(scaleXZ, PoleHeight / b.size.y, scaleXZ);
             b = LocalBounds(pole, perch.transform);
 
             // Stand it on the ground just right of the cargo box.
@@ -77,7 +80,7 @@ namespace RavenPost
 
         private static void AddBird(GameObject perch, Vector3? poleTop)
         {
-            var template = RavenFlight.Template;
+            var template = RavenFlight.PerchedTemplate;
             if (!template)
             {
                 return;
