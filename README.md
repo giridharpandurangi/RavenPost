@@ -1,4 +1,4 @@
-# Raven Post (v0.1)
+# Raven Post (v0.2)
 
 A Valheim mod: build Raven Perches at your bases, and ravens carry items between them.
 Single player only for now.
@@ -26,11 +26,12 @@ you like), so other mods can't get in the way.
 ## How to play
 
 1. Hammer → Misc → **Raven Perch** (needs a workbench). Costs 4 Fine Wood, 4 Feathers, 5 Bronze Nails.
-   For v0.1 it still looks like a wooden chest.
+   It's a cargo box with a wooden post and a raven sitting on top.
 2. Look at the perch and press **N** to name it, e.g. "Homestead".
 3. Build a second perch somewhere else and name it.
-4. Open a perch (**E**), put items in the cargo slots (2×2 by default), close it.
-5. Look at it and press **J** to choose the destination, then **K** to send.
+4. Open a perch (**E**). Put items in the cargo slots (2×2 by default).
+5. In the **Raven Post** window next to the cargo, click a destination, then **Send raven**.
+   Shortcut without opening it: look at the perch, **J** picks the next destination, **K** sends.
 6. A raven flies off. When it lands you get a message in the top left, wherever you are.
    The items appear in the destination perch the next time that area is loaded.
 
@@ -59,10 +60,12 @@ All of these are in `BepInEx/config/com.ravenpost.valheim.cfg` after the first l
 - `src/Plugin.cs`: config, piece registration, keys
 - `src/RavenPerch.cs`: per-perch logic: send, collect arrivals, hover text, rename
 - `src/PostOffice.cs`: finding perches, inbox save format, flight time
-- `src/RavenFlight.cs`: take-off animation (visual only)
+- `src/RavenFlight.cs`: take-off and landing animations (visual only)
+- `src/PerchModel.cs`: builds the perch look from vanilla models
+- `src/SendWindow.cs`: destination list and Send button next to the cargo slots
 - `src/Patches.cs`: Harmony patches for hover text and removal
 
 ## Ideas for v0.2+
 
-Own perch model, a proper send UI with a destination list, raven food cost, route danger, perch upgrade
+Raven food cost, route danger, perch upgrade
 tiers, multiplayer (server holds the deliveries, synced config).

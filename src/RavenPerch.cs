@@ -50,10 +50,10 @@ namespace RavenPost
             PostOffice.InvalidatePerches();
         }
 
-        private List<ZDO> Destinations() =>
+        public List<ZDO> Destinations() =>
             PostOffice.GetAllPerches().Where(z => z.m_uid != Zdo.m_uid).ToList();
 
-        private ZDO SelectedDestination(List<ZDO> destinations)
+        public ZDO SelectedDestination(List<ZDO> destinations)
         {
             if (destinations.Count == 0)
             {
@@ -67,6 +67,12 @@ namespace RavenPost
             }
             return found;
         }
+
+        public void Select(ZDOID destination) => _selectedDestination = destination;
+
+        public float DistanceTo(ZDO destination) => Vector3.Distance(transform.position, destination.GetPosition());
+
+        public float CargoWeight => _container.GetInventory()?.GetTotalWeight() ?? 0f;
 
         public void NextDestination()
         {
@@ -89,9 +95,9 @@ namespace RavenPost
             {
                 return;
             }
-            if (!_nview.IsOwner() || _container.IsInUse())
+            if (!_nview.IsOwner())
             {
-                player.Message(MessageHud.MessageType.Center, "Close the perch before sending");
+                player.Message(MessageHud.MessageType.Center, "Someone else is using this perch");
                 return;
             }
 

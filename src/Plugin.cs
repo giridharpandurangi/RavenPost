@@ -15,7 +15,7 @@ namespace RavenPost
     {
         public const string ModGuid = "com.ravenpost.valheim";
         public const string ModName = "Raven Post";
-        public const string ModVersion = "0.1.1";
+        public const string ModVersion = "0.2.0";
 
         public const string PerchPrefabName = "piece_ravenperch";
 
@@ -94,12 +94,23 @@ namespace RavenPost
 
             prefab.AddComponent<RavenPerch>();
 
-            PieceManager.Instance.AddPiece(piece);
             RavenFlight.Prepare();
+            try
+            {
+                PerchModel.Decorate(prefab);
+            }
+            catch (System.Exception e)
+            {
+                Log.LogError($"Couldn't build the perch model, using the plain chest look: {e}");
+            }
+
+            PieceManager.Instance.AddPiece(piece);
         }
 
         private void Update()
         {
+            SendWindow.Tick();
+
             if (!PostOffice.IsActive)
             {
                 return;

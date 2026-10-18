@@ -1,3 +1,4 @@
+using Jotunn.Managers;
 using UnityEngine;
 
 namespace RavenPost
@@ -23,6 +24,17 @@ namespace RavenPost
         private static readonly string[] s_candidatePrefabs = { "Crow", "Raven", "Seagal" };
 
         private static GameObject s_template;
+        private static bool s_warned;
+
+        /// <summary>Stripped, inactive bird model; null if no bird prefab exists.</summary>
+        public static GameObject Template
+        {
+            get
+            {
+                Prepare();
+                return s_template;
+            }
+        }
 
         private enum Mode { TakeOff, Land }
 
@@ -36,7 +48,7 @@ namespace RavenPost
 
         public static void Prepare()
         {
-            if (s_template || !ZNetScene.instance)
+            if (s_template)
             {
                 return;
             }
@@ -44,7 +56,7 @@ namespace RavenPost
             GameObject source = null;
             foreach (var name in s_candidatePrefabs)
             {
-                source = ZNetScene.instance.GetPrefab(name);
+                source = PrefabManager.Instance.GetPrefab(name);
                 if (source)
                 {
                     Plugin.Log.LogInfo($"Raven visual uses prefab '{name}'");
@@ -53,7 +65,11 @@ namespace RavenPost
             }
             if (!source)
             {
-                Plugin.Log.LogWarning("No bird prefab found; ravens will be invisible.");
+                if (!s_warned)
+                {
+                    s_warned = true;
+                    Plugin.Log.LogWarning("No bird prefab found; ravens will be invisible.");
+                }
                 return;
             }
 
