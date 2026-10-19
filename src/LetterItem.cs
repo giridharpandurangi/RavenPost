@@ -21,6 +21,22 @@ namespace RavenPost
         private const string AuthorKey = "ravenpost_author";
         private const string DayKey = "ravenpost_day";
         private const string FromKey = "ravenpost_from";
+        private const string AuthorIdKey = "ravenpost_authorid";
+        private const string ReadOnlyId = "locked"; // kept raven mail: nobody may rewrite someone else's words
+
+        /// <summary>The local character's ID (unique per character, unlike the name).</summary>
+        private static string LocalPlayerId() =>
+            Game.instance ? Game.instance.GetPlayerProfile().GetPlayerID().ToString() : "";
+
+        /// <summary>Blank letters and ones without a recorded author can be written by anyone; otherwise only the author.</summary>
+        public static bool CanEdit(ItemDrop.ItemData item)
+        {
+            if (!item.m_customData.TryGetValue(AuthorIdKey, out var id) || string.IsNullOrEmpty(id))
+            {
+                return true;
+            }
+            return id != ReadOnlyId && id == LocalPlayerId();
+        }
 
         public static void Register()
         {
@@ -66,6 +82,8 @@ namespace RavenPost
             item.m_customData[TextKey] = text;
             item.m_customData[AuthorKey] = author ?? "";
             item.m_customData[DayKey] = RavenMail.Day(PostOffice.Now).ToString();
+            // Clearing a letter makes it blank again (anyone may write it); writing claims it.
+            item.m_customData[AuthorIdKey] = text.Length > 0 ? LocalPlayerId() : "";
         }
 
         /// <summary>Lines added to the item tooltip.</summary>
@@ -86,7 +104,9 @@ namespace RavenPost
             }
             string when = string.IsNullOrEmpty(day) ? "" : $"Day {day}";
             string header = string.Join(", ", new[] { who, when }.Where(s => s.Length > 0));
-            return $"\n\n<color=orange>{header}</color>\n<color=#e8dcc0>{Escape(text)}</color>\n\n<color=grey>Use it to edit.</color>";
+            bool locked = item.m_customData.TryGetValue(AuthorIdKey, out var id) && id == ReadOnlyId;
+            string footer = CanEdit(item) ? "Use it to edit." : locked ? "A kept letter can't be changed." : "Only the author can change it.";
+            return $"\n\n<color=orange>{header}</color>\n<color=#e8dcc0>{Escape(text)}</color>\n\n<color=grey>{footer}</color>";
         }
 
         // Stop players' text from opening rich-text tags in the tooltip.
@@ -108,6 +128,7 @@ namespace RavenPost
             item.m_customData[AuthorKey] = letter.FromPlayer ?? "";
             item.m_customData[FromKey] = letter.From ?? "";
             item.m_customData[DayKey] = RavenMail.Day(letter.SentAt).ToString();
+            item.m_customData[AuthorIdKey] = ReadOnlyId;
 
             var inventory = player.GetInventory();
             if (!inventory.CanAddItem(item) || !inventory.AddItem(item))
@@ -124,6 +145,15 @@ namespace RavenPost
         {
             if (!TextInput.instance)
             {
+                return;
+            }
+            if (!CanEdit(item))
+            {
+                item.m_customData.TryGetValue(AuthorKey, out var author);
+                bool locked = item.m_customData.TryGetValue(AuthorIdKey, out var id) && id == ReadOnlyId;
+                player.Message(MessageHud.MessageType.Center, locked || string.IsNullOrEmpty(author)
+                    ? "This letter can't be changed"
+                    : $"Only {author} can change this letter");
                 return;
             }
             // The inventory window closes on E/Tab, which would happen while typing; reopen it afterwards.
