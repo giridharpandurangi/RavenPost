@@ -258,9 +258,10 @@ namespace RavenPost
             s_readBody.verticalOverflow = VerticalWrapMode.Truncate;
 
             float y = -470f;
-            AddButton(t, "Back", new Vector2(-98f, y), 90f, () => { s_reading = -1; Refresh(); });
-            AddButton(t, "Reply", new Vector2(0f, y), 90f, OnReplyClicked);
-            AddButton(t, "Delete", new Vector2(98f, y), 90f, OnDeleteClicked);
+            AddButton(t, "Back", new Vector2(-111f, y), 66f, () => { s_reading = -1; Refresh(); });
+            AddButton(t, "Reply", new Vector2(-37f, y), 70f, OnReplyClicked);
+            AddButton(t, "Keep", new Vector2(37f, y), 70f, OnKeepClicked);
+            AddButton(t, "Delete", new Vector2(111f, y), 66f, OnDeleteClicked);
         }
 
         private static void BuildPerchView()
@@ -616,6 +617,20 @@ namespace RavenPost
             s_tab = Tab.Send;
             s_reading = -1;
             NoteWriter.Open(s_perch, $"Reply to {letter.From}");
+        }
+
+        /// <summary>Copies the open letter into the player's bag as a Letter item, for their journal.</summary>
+        private static void OnKeepClicked()
+        {
+            if (!s_perch || s_reading < 0 || !Player.m_localPlayer)
+            {
+                return;
+            }
+            var letters = s_perch.Mailbox;
+            if (s_reading < letters.Count)
+            {
+                LetterItem.GiveCopy(Player.m_localPlayer, letters[s_reading]);
+            }
         }
 
         private static void OnDeleteClicked()

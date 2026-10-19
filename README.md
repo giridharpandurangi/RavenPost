@@ -1,4 +1,4 @@
-# Raven Post (v0.5)
+# Raven Post (v0.6)
 
 A Valheim mod: build Raven Perches at your bases, and ravens carry items between them.
 Single player only for now.
@@ -52,7 +52,12 @@ you like), so other mods can't get in the way.
    | Deep North | Deep North | 30 Flametal, 2 Molten Core (until Deep North items exist) | 8x6 | x4.0 |
 
    Every tier's cost, size and speed is in the config. Unknown items are logged at load.
-9. A raven flies off. When it lands you get a message in the top left, wherever you are.
+9. **Letters** (no raven needed): craft at the workbench, 1 Leather Scraps + 1 Coal = 2 Letters. Right-click
+   a letter (or press its hotbar key) to write up to 500 characters (type `
+` for a new line); hover it to
+   read who wrote it, when, and the text. Keep them as a journal, store them anywhere, or send them as
+   cargo. **Keep** in the Mail tab turns a received raven letter into a Letter item.
+10. A raven flies off. When it lands you get a message in the top left, wherever you are.
    The items appear in the destination perch the next time that area is loaded.
 
 ## Rules
@@ -87,6 +92,7 @@ All of these are in `BepInEx/config/com.ravenpost.valheim.cfg` after the first l
 - `src/PerchModel.cs`: builds the perch look from vanilla models
 - `src/PerchTiers.cs`: upgrade tiers, costs, sizes and speeds
 - `src/RavenFood.cs`: what ravens eat, meal storage
+- `src/LetterItem.cs`: the Letter item: recipe, icon, writing, tooltip
 - `src/RavenMail.cs`: letters, mailbox storage, note writing
 - `src/SendWindow.cs`: the perch window: Send tab (destinations, note, feed, send) and Mail tab
 - `src/Patches.cs`: Harmony patches for hover text and removal
@@ -100,6 +106,6 @@ All of these are in `BepInEx/config/com.ravenpost.valheim.cfg` after the first l
 | Done (v0.3) | Raven food | Meals speed ravens up; hungry ravens fly slowly | Small |
 | Done (v0.4) | **Raven mail** | Mailbox on every perch: write notes, with or without cargo. Inbox shows from, day and message; read, delete, reply. Hover shows unread count | Medium |
 | Done (v0.5) | Perch upgrades | Wooden, Bronze, Iron tiers: more cargo slots, faster ravens, longer range | Small–Medium |
-| Idea | Letter items | Craftable letters that keep their text, can be stored and collected | Medium |
+| Done (v0.6) | Letter items | Craftable letters that keep their text, can be stored and collected | Medium |
 | Idea | Multiplayer | Send cargo and mail to friends' perches on a server | Large |
 | Idea | Publish on Thunderstore | Icon, manifest and description so others can install it with r2modman | Small |

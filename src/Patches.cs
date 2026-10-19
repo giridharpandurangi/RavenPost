@@ -15,6 +15,40 @@ namespace RavenPost
         }
     }
 
+    /// <summary>Using a letter (hotbar key or right-click in the inventory) opens it for writing.</summary>
+    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.UseItem))]
+    internal static class LetterUsePatch
+    {
+        private static bool Prefix(Humanoid __instance, Inventory inventory, ItemDrop.ItemData item)
+        {
+            if (!LetterItem.IsLetter(item) || !(__instance is Player player) || player != Player.m_localPlayer)
+            {
+                return true;
+            }
+            // Only letters the player is carrying; a letter in an open chest should be taken out first.
+            if (inventory != null && inventory != player.GetInventory())
+            {
+                return true;
+            }
+            LetterItem.OpenWriter(player, item);
+            return false;
+        }
+    }
+
+    /// <summary>Shows a letter's author, day and text in its tooltip.</summary>
+    [HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetTooltip),
+        new[] { typeof(ItemDrop.ItemData), typeof(int), typeof(bool), typeof(float), typeof(int), typeof(bool) })]
+    internal static class LetterTooltipPatch
+    {
+        private static void Postfix(ItemDrop.ItemData item, ref string __result)
+        {
+            if (LetterItem.IsLetter(item))
+            {
+                __result += LetterItem.Tooltip(item);
+            }
+        }
+    }
+
     /// <summary>Sizes each perch's cargo for its own tier before the container creates its inventory.</summary>
     [HarmonyPatch(typeof(Container), "Awake")]
     internal static class ContainerAwakePatch

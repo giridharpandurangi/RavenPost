@@ -15,7 +15,7 @@ namespace RavenPost
     {
         public const string ModGuid = "com.ravenpost.valheim";
         public const string ModName = "Raven Post";
-        public const string ModVersion = "0.5.2";
+        public const string ModVersion = "0.6.0";
 
         public const string PerchPrefabName = "piece_ravenperch";
 
@@ -126,6 +126,7 @@ namespace RavenPost
             }
 
             PieceManager.Instance.AddPiece(piece);
+            LetterItem.Register();
         }
 
         private void Update()
