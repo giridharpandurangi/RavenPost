@@ -6,7 +6,7 @@
     <RootNamespace>RavenPost</RootNamespace>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
-    <Version>0.7.2</Version>
+    <Version>1.0.0</Version>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
@@ -50,6 +50,29 @@
     <MakeDir Directories="$(BepInExDir)\plugins\RavenPost" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExDir)\plugins\RavenPost" />
     <Message Importance="high" Text="RavenPost deployed to $(BepInExDir)\plugins\RavenPost" />
+  </Target>
+
+  <!-- dotnet build -c Release -p:Package=true  ->  dist\RavenPost-<version>.zip, ready to upload to Thunderstore. -->
+  <Target Name="ThunderstorePackage" AfterTargets="Build" Condition="'$(Package)' == 'true'">
+    <PropertyGroup>
+      <PkgDir>$(MSBuildProjectDirectory)\obj\thunderstore</PkgDir>
+      <DistDir>$(MSBuildProjectDirectory)\dist</DistDir>
+    </PropertyGroup>
+    <ReadLinesFromFile File="thunderstore\manifest.json">
+      <Output TaskParameter="Lines" ItemName="ManifestText" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <ManifestJson>@(ManifestText)</ManifestJson>
+      <ExpectedVersionLine>&quot;version_number&quot;: &quot;$(Version)&quot;</ExpectedVersionLine>
+    </PropertyGroup>
+    <Error Condition="!$(ManifestJson.Contains($(ExpectedVersionLine)))"
+           Text="thunderstore\manifest.json version_number doesn't match the project Version $(Version)." />
+    <RemoveDir Directories="$(PkgDir)" />
+    <MakeDir Directories="$(PkgDir)\plugins;$(DistDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PkgDir)\plugins" />
+    <Copy SourceFiles="thunderstore\manifest.json;thunderstore\README.md;thunderstore\CHANGELOG.md;thunderstore\icon.png" DestinationFolder="$(PkgDir)" />
+    <ZipDirectory SourceDirectory="$(PkgDir)" DestinationFile="$(DistDir)\RavenPost-$(Version).zip" Overwrite="true" />
+    <Message Importance="high" Text="Thunderstore package: $(DistDir)\RavenPost-$(Version).zip" />
   </Target>
 
   <Target Name="DeployToServer" AfterTargets="Build" Condition="'$(Deploy)' == 'true' And Exists('$(ServerDir)\BepInEx\core')">

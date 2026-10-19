@@ -1,4 +1,4 @@
-# Raven Post (v0.7)
+# Raven Post (v1.0)
 
 A Valheim mod: build Raven Perches at your bases, and ravens carry items between them.
 Works in single player, hosted games and dedicated servers. Everyone (server and players) needs the mod.
@@ -17,8 +17,19 @@ To build **and** copy it into the r2modman profile's plugins folder:
 dotnet build -c Release -p:Deploy=true
 ```
 
-Paths are set at the top of `RavenPost.csproj` (`ValheimDir`, `ProfileDir`). The default profile is
-"Testing". Pass `-p:ProfileDir=...` to use another.
+Paths are set at the top of `RavenPost.csproj` (`ValheimDir`, `ProfileDir`, `ServerDir`). The default
+profile is "Testing". Pass `-p:ProfileDir=...` to use another. If the local dedicated server in `ServerDir`
+has BepInEx installed, the DLL is copied there too.
+
+To make the Thunderstore package:
+
+```bash
+dotnet build -c Release -p:Package=true
+```
+
+Output: `dist/RavenPost-<version>.zip`. The store page, changelog, icon and manifest are in `thunderstore/`
+(`make_icon.py` redraws the icon). The build stops if `thunderstore/manifest.json` has a different
+version from `<Version>` in the project file, so bump both together.
 
 Tip: for testing, make a separate r2modman profile with only Jötunn installed (and ConfigurationManager if
 you like), so other mods can't get in the way.
@@ -112,4 +123,4 @@ All of these are in `BepInEx/config/com.ravenpost.valheim.cfg` after the first l
 | Done (v0.5) | Perch upgrades | Wooden, Bronze, Iron tiers: more cargo slots, faster ravens, longer range | Small–Medium |
 | Done (v0.6) | Letter items | Craftable letters that keep their text, can be stored and collected | Medium |
 | Done (v0.7) | Multiplayer | Send cargo and mail to friends' perches on a server | Large |
-| Idea | Publish on Thunderstore | Icon, manifest and description so others can install it with r2modman | Small |
+| Ready (v1.0) | Publish on Thunderstore | Icon, manifest and description so others can install it with r2modman | Small |
