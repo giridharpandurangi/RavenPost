@@ -19,6 +19,8 @@
     <BepInExDir>$(ProfileDir)\BepInEx</BepInExDir>
     <!-- Set to true (dotnet build -p:Deploy=true) to copy the DLL into the profile's plugins folder. -->
     <Deploy Condition="'$(Deploy)' == ''">false</Deploy>
+    <!-- Local dedicated server for multiplayer testing; deployed to as well when it has BepInEx. -->
+    <ServerDir Condition="'$(ServerDir)' == ''">F:\SteamLibrary\steamapps\common\Valheim dedicated server</ServerDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -48,6 +50,12 @@
     <MakeDir Directories="$(BepInExDir)\plugins\RavenPost" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExDir)\plugins\RavenPost" />
     <Message Importance="high" Text="RavenPost deployed to $(BepInExDir)\plugins\RavenPost" />
+  </Target>
+
+  <Target Name="DeployToServer" AfterTargets="Build" Condition="'$(Deploy)' == 'true' And Exists('$(ServerDir)\BepInEx\core')">
+    <MakeDir Directories="$(ServerDir)\BepInEx\plugins\RavenPost" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ServerDir)\BepInEx\plugins\RavenPost" />
+    <Message Importance="high" Text="RavenPost deployed to $(ServerDir)\BepInEx\plugins\RavenPost" />
   </Target>
 
 </Project>
