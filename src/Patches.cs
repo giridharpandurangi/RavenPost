@@ -15,6 +15,23 @@ namespace RavenPost
         }
     }
 
+    /// <summary>Sizes each perch's cargo for its own tier before the container creates its inventory.</summary>
+    [HarmonyPatch(typeof(Container), "Awake")]
+    internal static class ContainerAwakePatch
+    {
+        private static void Prefix(Container __instance)
+        {
+            if (!__instance.GetComponent<RavenPerch>())
+            {
+                return;
+            }
+            var nview = __instance.GetComponent<ZNetView>();
+            var zdo = nview ? nview.GetZDO() : null;
+            int tier = zdo != null ? zdo.GetInt(PerchTiers.TierKey) : 0;
+            RavenPerch.ApplyTier(__instance, PerchTiers.Get(tier));
+        }
+    }
+
     /// <summary>Using a food item from the hotbar while looking at a perch feeds the raven.</summary>
     [HarmonyPatch(typeof(Container), nameof(Container.UseItem))]
     internal static class ContainerUseItemPatch

@@ -26,8 +26,8 @@ namespace RavenPost
             var shared = item.m_shared;
             if (shared.m_itemType == ItemDrop.ItemData.ItemType.Consumable && shared.m_food > 0f)
             {
-                // 30 health food -> 1.2x, 60 -> 1.4x, 90+ -> 1.6x
-                return 1f + Mathf.Min(shared.m_food, 90f) / 150f;
+                // 30 health food -> x1.6, 75 -> x2.5, 100 -> x3; end-game food flies fastest.
+                return Mathf.Min(Plugin.MaxFoodSpeed.Value, 1f + shared.m_food / 50f);
             }
             string prefab = item.m_dropPrefab ? item.m_dropPrefab.name : "";
             return RawMeats().Contains(prefab) ? Plugin.RawMeatSpeed.Value : 0f;

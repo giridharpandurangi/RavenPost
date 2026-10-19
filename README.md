@@ -1,4 +1,4 @@
-# Raven Post (v0.4)
+# Raven Post (v0.5)
 
 A Valheim mod: build Raven Perches at your bases, and ravens carry items between them.
 Single player only for now.
@@ -38,15 +38,29 @@ you like), so other mods can't get in the way.
    flies with the next raven, with cargo or on its own (a letter alone needs no meal). Letters arrive in
    the destination perch's **Mail** tab: from, day and message, with **Reply** and **Delete**. The hover text
    shows unread letters.
-8. A raven flies off. When it lands you get a message in the top left, wherever you are.
+8. **Upgrade the perch** on the **Perch** tab. Each tier follows the biomes: bigger cargo and faster ravens.
+
+   | Tier | Biome | Upgrade cost | Cargo | Speed |
+   |---|---|---|---|---|
+   | Wooden | Meadows | (build cost) | 2x2 | x1.0 |
+   | Bronze | Black Forest | 5 Bronze, 10 Bronze Nails | 3x2 | x1.2 |
+   | Iron | Swamp | 10 Iron, 5 Guck | 4x2 | x1.4 |
+   | Silver | Mountains | 10 Silver, 4 Wolf Pelt | 5x3 | x1.7 |
+   | Black Metal | Plains | 10 Black Metal, 10 Linen Thread | 6x3 | x2.0 |
+   | Eitr | Mistlands | 2 Black Core, 10 Eitr, 10 Carapace | 7x4 | x2.5 |
+   | Flametal | Ashlands | 10 Flametal, 3 Celestial Feathers | 8x4 | x3.0 |
+   | Deep North | Deep North | 30 Flametal, 2 Molten Core (until Deep North items exist) | 8x6 | x4.0 |
+
+   Every tier's cost, size and speed is in the config. Unknown items are logged at load.
+9. A raven flies off. When it lands you get a message in the top left, wherever you are.
    The items appear in the destination perch the next time that area is loaded.
 
 ## Rules
 
 - Flight time: 10 s per 100 m (min 10 s), +50% per 100 weight of cargo. It uses in-game time, so
   sleeping speeds deliveries up and they pause while the game is closed.
-- Food speeds ravens up: cooked food by its health value (30 hp = x1.2, 60 = x1.4, 90+ = x1.6), raw meat
-  x1.25. A hungry raven flies at x0.5, or refuses to fly if `HungryRaven = Refuse`. `UseFood = false`
+- Food speeds ravens up: cooked food by 1 + health / 50 (30 hp = x1.6, 75 hp = x2.5, up to x4), raw meat
+  x1.25. Perch speed and meal speed multiply. A hungry raven flies at x0.5, or refuses to fly if `HungryRaven = Refuse`. `UseFood = false`
   ignores food completely.
 - Ravens can carry ore and metal by default (`AllowNonTeleportable`).
 - If the destination is full, the rest waits in the perch until you make room.
@@ -71,6 +85,7 @@ All of these are in `BepInEx/config/com.ravenpost.valheim.cfg` after the first l
 - `src/PostOffice.cs`: finding perches, inbox save format, flight time
 - `src/RavenFlight.cs`: take-off and landing animations (visual only)
 - `src/PerchModel.cs`: builds the perch look from vanilla models
+- `src/PerchTiers.cs`: upgrade tiers, costs, sizes and speeds
 - `src/RavenFood.cs`: what ravens eat, meal storage
 - `src/RavenMail.cs`: letters, mailbox storage, note writing
 - `src/SendWindow.cs`: the perch window: Send tab (destinations, note, feed, send) and Mail tab
@@ -84,7 +99,7 @@ All of these are in `BepInEx/config/com.ravenpost.valheim.cfg` after the first l
 | Done (v0.2) | Send window | Destination list and Send button next to the cargo slots | Medium |
 | Done (v0.3) | Raven food | Meals speed ravens up; hungry ravens fly slowly | Small |
 | Done (v0.4) | **Raven mail** | Mailbox on every perch: write notes, with or without cargo. Inbox shows from, day and message; read, delete, reply. Hover shows unread count | Medium |
-| Idea | Perch upgrades | Wooden, Bronze, Iron tiers: more cargo slots, faster ravens, longer range | Small–Medium |
+| Done (v0.5) | Perch upgrades | Wooden, Bronze, Iron tiers: more cargo slots, faster ravens, longer range | Small–Medium |
 | Idea | Route danger | Storms or the Plains can delay a raven, rarely lose one (can be turned off) | Small |
 | Idea | Letter items | Craftable letters that keep their text, can be stored and collected | Medium |
 | Idea | Multiplayer | Send cargo and mail to friends' perches on a server | Large |

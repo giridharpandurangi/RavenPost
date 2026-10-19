@@ -20,7 +20,7 @@ namespace RavenPost
         private const float RowHeight = 34f;
         private const float ListTop = -112f;
 
-        private enum Tab { Send, Mail }
+        private enum Tab { Send, Mail, Perch }
 
         private static readonly FieldInfo s_currentContainer = AccessTools.Field(typeof(InventoryGui), "m_currentContainer");
 
@@ -28,6 +28,18 @@ namespace RavenPost
         private static Text s_title;
         private static Button s_sendTab;
         private static Button s_mailTab;
+        private static Button s_perchTab;
+
+        // Perch tab: tier, meals, upgrade
+        private const int CostLines = 4;
+        private static GameObject s_perchView;
+        private static Text s_tierHeader;
+        private static Text s_tierStats;
+        private static Text s_perchMeals;
+        private static Button s_perchFeed;
+        private static Text s_nextHeader;
+        private static readonly List<Text> s_costLines = new List<Text>();
+        private static Button s_upgrade;
 
         // Send tab
         private static GameObject s_sendView;
@@ -143,12 +155,14 @@ namespace RavenPost
 
             var root = s_panel.transform;
             s_title = AddText(root, "Raven Perch", -30f, 22, Gold, 36f);
-            s_sendTab = AddButton(root, "Send", new Vector2(-72f, -70f), 130f, () => SwitchTab(Tab.Send));
-            s_mailTab = AddButton(root, "Mail", new Vector2(72f, -70f), 130f, () => SwitchTab(Tab.Mail));
+            s_sendTab = AddButton(root, "Send", new Vector2(-98f, -70f), 90f, () => SwitchTab(Tab.Send));
+            s_mailTab = AddButton(root, "Mail", new Vector2(0f, -70f), 90f, () => SwitchTab(Tab.Mail));
+            s_perchTab = AddButton(root, "Perch", new Vector2(98f, -70f), 90f, () => SwitchTab(Tab.Perch));
 
             BuildSendView();
             BuildMailView();
             BuildReadView();
+            BuildPerchView();
 
             s_panel.SetActive(false);
             return true;
@@ -241,6 +255,25 @@ namespace RavenPost
             AddButton(t, "Delete", new Vector2(98f, y), 90f, OnDeleteClicked);
         }
 
+        private static void BuildPerchView()
+        {
+            s_perchView = AddView("PerchView");
+            var t = s_perchView.transform;
+            s_tierHeader = AddText(t, "", -122f, 20, Gold, 30f);
+            s_tierStats = AddText(t, "", -152f, 15, Plain, 26f);
+            s_perchMeals = AddText(t, "", -184f, 14, Plain, 26f);
+            s_perchFeed = AddButton(t, "Feed", new Vector2(0f, -220f), 130f, OnFeedClicked);
+
+            s_nextHeader = AddText(t, "", -282f, 16, Gold, 50f);
+            float y = -322f;
+            for (int i = 0; i < CostLines; i++)
+            {
+                s_costLines.Add(AddText(t, "", y, 15, Plain, 24f));
+                y -= 24f;
+            }
+            s_upgrade = AddButton(t, "Upgrade", new Vector2(0f, -470f), 160f, OnUpgradeClicked);
+        }
+
         private static Text AddText(Transform parent, string value, float y, int size, Color color, float height)
         {
             var go = GUIManager.Instance.CreateText(value, parent, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
@@ -273,6 +306,8 @@ namespace RavenPost
             int unread = s_perch.UnreadLetters;
             SetLabel(s_sendTab, s_tab == Tab.Send ? "> Send" : "Send");
             SetLabel(s_mailTab, (s_tab == Tab.Mail ? "> " : "") + (unread > 0 ? $"Mail ({unread})" : "Mail"));
+            SetLabel(s_perchTab, s_tab == Tab.Perch ? "> Perch" : "Perch");
+            s_perchView.SetActive(s_tab == Tab.Perch);
 
             s_sendView.SetActive(s_tab == Tab.Send);
             s_mailView.SetActive(s_tab == Tab.Mail && s_reading < 0);
@@ -281,6 +316,10 @@ namespace RavenPost
             if (s_tab == Tab.Send)
             {
                 RefreshSend();
+            }
+            else if (s_tab == Tab.Perch)
+            {
+                RefreshPerch();
             }
             else if (s_reading >= 0)
             {
@@ -352,7 +391,7 @@ namespace RavenPost
 
             if (!hasCargo && hasNote)
             {
-                float seconds = PostOffice.FlightSeconds(s_perch.DistanceTo(selected), 0f);
+                float seconds = s_perch.LetterSecondsTo(selected);
                 s_info.text = $"Letter to {PostOffice.GetName(selected)}: {PostOffice.FormatDuration(seconds)}\n" +
                               "<size=13>A letter alone needs no meal</size>";
                 s_send.interactable = true;
@@ -423,6 +462,65 @@ namespace RavenPost
             string who = string.IsNullOrEmpty(letter.FromPlayer) ? letter.From : $"{letter.From} ({letter.FromPlayer})";
             s_readHeader.text = $"From {who}\n<size=14>Day {RavenMail.Day(letter.SentAt)}</size>";
             s_readBody.text = letter.Text;
+        }
+
+        private static void RefreshPerch()
+        {
+            var tier = s_perch.Tier;
+            s_tierHeader.text = $"{tier.Name}";
+            s_tierStats.text = $"{tier.Biome}  -  cargo {tier.CargoWidth}x{tier.CargoHeight}, speed {RavenFood.FormatSpeed(tier.SpeedMultiplier)}";
+            bool food = Plugin.UseFood.Value;
+            s_perchMeals.text = food ? s_perch.MealsStatus : "";
+            s_perchFeed.gameObject.SetActive(food);
+
+            var next = s_perch.NextTier;
+            if (next == null)
+            {
+                s_nextHeader.text = "Fully upgraded";
+                foreach (var line in s_costLines)
+                {
+                    line.text = "";
+                }
+                s_upgrade.gameObject.SetActive(false);
+                return;
+            }
+
+            s_nextHeader.text = $"Next: {next.Name}\n<size=13>{next.Biome} - cargo {next.CargoWidth}x{next.CargoHeight}, " +
+                                $"speed {RavenFood.FormatSpeed(next.SpeedMultiplier)}</size>";
+            var reqs = next.Requirements();
+            var inventory = Player.m_localPlayer ? Player.m_localPlayer.GetInventory() : null;
+            bool affordable = reqs.Count > 0 && inventory != null;
+            for (int i = 0; i < CostLines; i++)
+            {
+                if (i >= reqs.Count)
+                {
+                    s_costLines[i].text = "";
+                    continue;
+                }
+                var data = PerchTiers.ItemData(reqs[i].Key);
+                if (data == null)
+                {
+                    s_costLines[i].text = $"<color=#ff6060>{reqs[i].Key} (not in this game)</color>";
+                    affordable = false;
+                    continue;
+                }
+                int have = inventory != null ? inventory.CountItems(data.m_shared.m_name) : 0;
+                bool enough = have >= reqs[i].Value;
+                affordable &= enough;
+                string colour = enough ? "#9be07a" : "#ff8060";
+                s_costLines[i].text = $"<color={colour}>{PerchTiers.DisplayName(reqs[i].Key)}  {have}/{reqs[i].Value}</color>";
+            }
+            s_upgrade.gameObject.SetActive(true);
+            s_upgrade.interactable = affordable;
+        }
+
+        private static void OnUpgradeClicked()
+        {
+            if (s_perch && Player.m_localPlayer)
+            {
+                s_perch.Upgrade(Player.m_localPlayer);
+                Refresh();
+            }
         }
 
         // ---------------------------------------------------------------- actions

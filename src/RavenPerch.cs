@@ -28,8 +28,99 @@ namespace RavenPost
                 wearNTear.m_onDestroyed += OnDestroyed;
             }
 
+            if (!s_validatedTiers)
+            {
+                s_validatedTiers = true;
+                PerchTiers.ValidateItems();
+            }
+
             PostOffice.InvalidatePerches();
             InvokeRepeating(nameof(CollectArrivals), 1f, 2f);
+        }
+
+        private static bool s_validatedTiers;
+        private static readonly System.Reflection.FieldInfo s_invWidth = HarmonyLib.AccessTools.Field(typeof(Inventory), "m_width");
+        private static readonly System.Reflection.FieldInfo s_invHeight = HarmonyLib.AccessTools.Field(typeof(Inventory), "m_height");
+        private static readonly System.Reflection.FieldInfo s_invName = HarmonyLib.AccessTools.Field(typeof(Inventory), "m_name");
+
+        // ------------------------------------------------------------ tiers
+
+        public int TierIndex => Zdo != null ? Mathf.Clamp(Zdo.GetInt(PerchTiers.TierKey), 0, PerchTiers.Max) : 0;
+
+        internal PerchTier Tier => PerchTiers.Get(TierIndex);
+
+        internal PerchTier NextTier => TierIndex < PerchTiers.Max ? PerchTiers.Get(TierIndex + 1) : null;
+
+        /// <summary>
+        /// Sizes the container for a tier. Called by ContainerAwakePatch before the inventory is created,
+        /// and after an upgrade. Never shrinks below the items already stored.
+        /// </summary>
+        internal static void ApplyTier(Container container, PerchTier tier)
+        {
+            container.m_name = tier.Name;
+            int width = tier.CargoWidth;
+            int height = tier.CargoHeight;
+
+            var inventory = container.GetInventory();
+            if (inventory == null)
+            {
+                container.m_width = width;
+                container.m_height = height;
+                return;
+            }
+            foreach (var item in inventory.GetAllItems())
+            {
+                width = Mathf.Max(width, item.m_gridPos.x + 1);
+                height = Mathf.Max(height, item.m_gridPos.y + 1);
+            }
+            container.m_width = width;
+            container.m_height = height;
+            s_invWidth?.SetValue(inventory, width);
+            s_invHeight?.SetValue(inventory, height);
+            s_invName?.SetValue(inventory, tier.Name);
+        }
+
+        /// <summary>Upgrades to the next tier, taking the materials from the player's inventory.</summary>
+        public void Upgrade(Player player)
+        {
+            var next = NextTier;
+            if (Zdo == null || !player || next == null)
+            {
+                return;
+            }
+            if (!_nview.IsOwner())
+            {
+                player.Message(MessageHud.MessageType.Center, "Someone else is using this perch");
+                return;
+            }
+            var missing = next.MissingItems();
+            if (missing.Count > 0)
+            {
+                player.Message(MessageHud.MessageType.Center, $"{next.Name} needs items this game doesn't have yet (see config)");
+                return;
+            }
+
+            var inventory = player.GetInventory();
+            foreach (var req in next.Requirements())
+            {
+                var data = PerchTiers.ItemData(req.Key);
+                if (inventory.CountItems(data.m_shared.m_name) < req.Value)
+                {
+                    player.Message(MessageHud.MessageType.Center,
+                        Localization.instance.Localize($"Not enough {data.m_shared.m_name} ({req.Value} needed)"));
+                    return;
+                }
+            }
+            foreach (var req in next.Requirements())
+            {
+                inventory.RemoveItem(PerchTiers.ItemData(req.Key).m_shared.m_name, req.Value);
+            }
+
+            Zdo.Set(PerchTiers.TierKey, next.Index);
+            ApplyTier(_container, next);
+            player.Message(MessageHud.MessageType.Center,
+                $"Upgraded to {next.Name}: {next.CargoWidth}x{next.CargoHeight} cargo, {RavenFood.FormatSpeed(next.SpeedMultiplier)} speed");
+            Plugin.Log.LogInfo($"'{PerchName}' upgraded to {next.Name}");
         }
 
         private ZDO Zdo => _nview && _nview.IsValid() ? _nview.GetZDO() : null;
@@ -117,7 +208,11 @@ namespace RavenPost
 
         /// <summary>Flight time to <paramref name="destination"/> with the current cargo and next meal.</summary>
         public float FlightSecondsTo(ZDO destination) =>
-            PostOffice.FlightSeconds(DistanceTo(destination), CargoWeight) / NextMealSpeed;
+            PostOffice.FlightSeconds(DistanceTo(destination), CargoWeight) / (NextMealSpeed * Tier.SpeedMultiplier);
+
+        /// <summary>A letter alone: no cargo weight, no meal, just the perch's speed.</summary>
+        public float LetterSecondsTo(ZDO destination) =>
+            PostOffice.FlightSeconds(DistanceTo(destination), 0f) / Tier.SpeedMultiplier;
 
         /// <summary>Feeds one of <paramref name="item"/> from the player's inventory. False if ravens won't eat it.</summary>
         public bool Feed(Player player, ItemDrop.ItemData item)
@@ -235,7 +330,7 @@ namespace RavenPost
 
             float distance = Vector3.Distance(transform.position, destination.GetPosition());
             float weight = inventory.GetTotalWeight();
-            float seconds = PostOffice.FlightSeconds(distance, weight) / mealSpeed;
+            float seconds = PostOffice.FlightSeconds(distance, weight) / (mealSpeed * Tier.SpeedMultiplier);
 
             var delivery = new Delivery
             {
@@ -453,7 +548,7 @@ namespace RavenPost
             }
 
             var sb = new StringBuilder();
-            sb.Append($"\n<color=orange>{PerchName}</color>");
+            sb.Append($"\n<color=orange>{PerchName}</color>  <color=grey>{Tier.Name}, {RavenFood.FormatSpeed(Tier.SpeedMultiplier)}</color>");
 
             if (!PostOffice.IsActive)
             {
