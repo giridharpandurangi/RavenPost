@@ -53,8 +53,7 @@ you like), so other mods can't get in the way.
 
    Every tier's cost, size and speed is in the config. Unknown items are logged at load.
 9. **Letters** (no raven needed): craft at the workbench, 1 Leather Scraps + 1 Coal = 2 Letters. Right-click
-   a letter (or press its hotbar key) to write up to 500 characters (type `
-` for a new line); hover it to
+   a letter (or press its hotbar key) to write up to 500 characters (type `\n` for a new line); hover it to
    read who wrote it, when, and the text. Keep them as a journal, store them anywhere, or send them as
    cargo. **Keep** in the Mail tab turns a received raven letter into a Letter item.
 10. A raven flies off. When it lands you get a message in the top left, wherever you are.
