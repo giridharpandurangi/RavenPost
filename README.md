@@ -100,7 +100,6 @@ All of these are in `BepInEx/config/com.ravenpost.valheim.cfg` after the first l
 | Done (v0.3) | Raven food | Meals speed ravens up; hungry ravens fly slowly | Small |
 | Done (v0.4) | **Raven mail** | Mailbox on every perch: write notes, with or without cargo. Inbox shows from, day and message; read, delete, reply. Hover shows unread count | Medium |
 | Done (v0.5) | Perch upgrades | Wooden, Bronze, Iron tiers: more cargo slots, faster ravens, longer range | Small–Medium |
-| Idea | Route danger | Storms or the Plains can delay a raven, rarely lose one (can be turned off) | Small |
 | Idea | Letter items | Craftable letters that keep their text, can be stored and collected | Medium |
 | Idea | Multiplayer | Send cargo and mail to friends' perches on a server | Large |
 | Idea | Publish on Thunderstore | Icon, manifest and description so others can install it with r2modman | Small |
