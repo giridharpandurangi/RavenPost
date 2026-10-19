@@ -204,11 +204,15 @@ namespace RavenPost
 
             var inventory = _container.GetInventory();
             var items = inventory.GetAllItems().ToList();
-            if (items.Count == 0)
+            string note = Draft;
+            bool hasNote = !string.IsNullOrEmpty(note);
+            if (items.Count == 0 && !hasNote)
             {
-                player.Message(MessageHud.MessageType.Center, "Put some cargo in the perch first");
+                player.Message(MessageHud.MessageType.Center, "Put some cargo in the perch or write a note first");
                 return;
             }
+            // A note on its own is light: no meal needed and it flies at normal speed.
+            bool noteOnly = items.Count == 0;
 
             if (!Plugin.AllowNonTeleportable.Value && !ZoneSystem.instance.GetGlobalKey(GlobalKeys.TeleportAll))
             {
@@ -221,13 +225,13 @@ namespace RavenPost
                 }
             }
 
-            if (RefusesToFly)
+            if (!noteOnly && RefusesToFly)
             {
                 player.Message(MessageHud.MessageType.Center, "Your raven is hungry - feed it first");
                 return;
             }
             var meals = Meals;
-            float mealSpeed = NextMealSpeed;
+            float mealSpeed = noteOnly ? 1f : NextMealSpeed;
 
             float distance = Vector3.Distance(transform.position, destination.GetPosition());
             float weight = inventory.GetTotalWeight();
@@ -240,6 +244,9 @@ namespace RavenPost
                 Notified = false,
                 Items = PostOffice.PackItems(items),
                 FromPos = transform.position,
+                Note = note ?? "",
+                FromPlayer = player.GetPlayerName(),
+                SentAt = PostOffice.Now,
             };
 
             var inbox = PostOffice.ReadInbox(destination);
@@ -248,7 +255,8 @@ namespace RavenPost
 
             // Only empty the cargo once the delivery is safely stored on the destination.
             inventory.RemoveAll();
-            if (Plugin.UseFood.Value && meals.Count > 0)
+            Draft = "";
+            if (!noteOnly && Plugin.UseFood.Value && meals.Count > 0)
             {
                 meals.RemoveAt(0);
                 RavenFood.WriteMeals(Zdo, meals);
@@ -256,10 +264,59 @@ namespace RavenPost
 
             RavenFlight.Launch(SeatPosition, destination.GetPosition());
             HideSeatedRaven(RavenFlight.TakeOffSeconds + 4f);
+            string what = noteOnly ? "Letter" : hasNote ? "Raven and letter" : "Raven";
             player.Message(MessageHud.MessageType.Center,
-                $"Raven sent to {PostOffice.GetName(destination)} - arrives in {PostOffice.FormatDuration(seconds)}");
+                $"{what} sent to {PostOffice.GetName(destination)} - arrives in {PostOffice.FormatDuration(seconds)}");
             Plugin.Log.LogInfo($"Sent {items.Count} stack(s) from '{PerchName}' to '{PostOffice.GetName(destination)}', " +
-                               $"{distance:0} m, {weight:0.#} weight, meal {RavenFood.FormatSpeed(mealSpeed)}, {seconds:0} s");
+                               $"{distance:0} m, {weight:0.#} weight, note {(hasNote ? "yes" : "no")}, meal {RavenFood.FormatSpeed(mealSpeed)}, {seconds:0} s");
+        }
+
+        /// <summary>The note waiting to be sent with the next raven.</summary>
+        public string Draft
+        {
+            get => Zdo?.GetString(RavenMail.DraftKey) ?? "";
+            set
+            {
+                if (Zdo != null && _nview.IsOwner())
+                {
+                    string text = (value ?? "").Trim();
+                    if (text.Length > RavenMail.MaxNoteLength)
+                    {
+                        text = text.Substring(0, RavenMail.MaxNoteLength);
+                    }
+                    Zdo.Set(RavenMail.DraftKey, text);
+                }
+            }
+        }
+
+        internal List<Letter> Mailbox => Zdo != null ? RavenMail.Read(Zdo) : new List<Letter>();
+
+        public int UnreadLetters => Zdo != null ? RavenMail.UnreadCount(Zdo) : 0;
+
+        /// <summary>Marks letter <paramref name="index"/> (in saved order) as read and returns it.</summary>
+        internal Letter OpenLetter(int index)
+        {
+            var letters = Mailbox;
+            if (index < 0 || index >= letters.Count)
+            {
+                return null;
+            }
+            if (!letters[index].Read && _nview.IsOwner())
+            {
+                letters[index].Read = true;
+                RavenMail.Write(Zdo, letters);
+            }
+            return letters[index];
+        }
+
+        public void DeleteLetter(int index)
+        {
+            var letters = Mailbox;
+            if (index >= 0 && index < letters.Count && _nview.IsOwner())
+            {
+                letters.RemoveAt(index);
+                RavenMail.Write(Zdo, letters);
+            }
         }
 
         private Transform SeatedRaven => transform.Find("RavenPost_PerchedRaven");
@@ -321,6 +378,14 @@ namespace RavenPost
                 {
                     remaining.Add(d);
                     continue;
+                }
+
+                // The letter goes straight into the mailbox, even if the cargo has to wait for room.
+                if (d.HasNote)
+                {
+                    RavenMail.Deliver(Zdo, d);
+                    d.Note = "";
+                    changed = true;
                 }
 
                 var cargo = PostOffice.UnpackItems(d.Items);
@@ -416,6 +481,16 @@ namespace RavenPost
             {
                 sb.Append($"\n{MealsStatus}");
                 sb.Append("\n<color=grey>Use food from your hotbar on the perch to feed</color>");
+            }
+
+            int unread = UnreadLetters;
+            if (unread > 0)
+            {
+                sb.Append($"\n<color=yellow>{unread} unread letter{(unread == 1 ? "" : "s")} - open the perch to read</color>");
+            }
+            if (!string.IsNullOrEmpty(Draft))
+            {
+                sb.Append($"\n<color=grey>Note ready: \"{RavenMail.Preview(Draft)}\"</color>");
             }
 
             var inbox = PostOffice.ReadInbox(Zdo);

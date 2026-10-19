@@ -15,7 +15,7 @@ namespace RavenPost
     {
         public const string ModGuid = "com.ravenpost.valheim";
         public const string ModName = "Raven Post";
-        public const string ModVersion = "0.3.0";
+        public const string ModVersion = "0.4.0";
 
         public const string PerchPrefabName = "piece_ravenperch";
 

@@ -1,4 +1,4 @@
-# Raven Post (v0.3)
+# Raven Post (v0.4)
 
 A Valheim mod: build Raven Perches at your bases, and ravens carry items between them.
 Single player only for now.
@@ -34,7 +34,11 @@ you like), so other mods can't get in the way.
    Shortcut without opening it: look at the perch, **J** picks the next destination, **K** sends.
 6. **Feed your raven**: look at the perch and press the hotbar number of a food, or click **Feed** in the
    window (uses the best food you carry). A perch stores up to 10 meals; each flight eats the best one.
-7. A raven flies off. When it lands you get a message in the top left, wherever you are.
+7. **Raven mail**: on the Send tab click **Write note**, type up to 200 characters and press Enter. The note
+   flies with the next raven, with cargo or on its own (a letter alone needs no meal). Letters arrive in
+   the destination perch's **Mail** tab: from, day and message, with **Reply** and **Delete**. The hover text
+   shows unread letters.
+8. A raven flies off. When it lands you get a message in the top left, wherever you are.
    The items appear in the destination perch the next time that area is loaded.
 
 ## Rules
@@ -68,7 +72,8 @@ All of these are in `BepInEx/config/com.ravenpost.valheim.cfg` after the first l
 - `src/RavenFlight.cs`: take-off and landing animations (visual only)
 - `src/PerchModel.cs`: builds the perch look from vanilla models
 - `src/RavenFood.cs`: what ravens eat, meal storage
-- `src/SendWindow.cs`: destination list and Send button next to the cargo slots
+- `src/RavenMail.cs`: letters, mailbox storage, note writing
+- `src/SendWindow.cs`: the perch window: Send tab (destinations, note, feed, send) and Mail tab
 - `src/Patches.cs`: Harmony patches for hover text and removal
 
 ## Ideas
@@ -78,7 +83,7 @@ All of these are in `BepInEx/config/com.ravenpost.valheim.cfg` after the first l
 | Done (v0.2) | Real perch look | Wooden post with a sitting raven next to the cargo box | Medium |
 | Done (v0.2) | Send window | Destination list and Send button next to the cargo slots | Medium |
 | Done (v0.3) | Raven food | Meals speed ravens up; hungry ravens fly slowly | Small |
-| Next | **Raven mail** | Mailbox on every perch: write notes, with or without cargo. Inbox shows from, day and message; read, delete, reply. Hover shows unread count | Medium |
+| Done (v0.4) | **Raven mail** | Mailbox on every perch: write notes, with or without cargo. Inbox shows from, day and message; read, delete, reply. Hover shows unread count | Medium |
 | Idea | Perch upgrades | Wooden, Bronze, Iron tiers: more cargo slots, faster ravens, longer range | Small–Medium |
 | Idea | Route danger | Storms or the Plains can delay a raven, rarely lose one (can be turned off) | Small |
 | Idea | Letter items | Craftable letters that keep their text, can be stored and collected | Medium |

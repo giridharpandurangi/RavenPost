@@ -12,6 +12,13 @@ namespace RavenPost
         public byte[] Items;
         public Vector3 FromPos; // zero for deliveries saved by v0.1.0
 
+        // v3: an optional letter riding with the raven
+        public string Note = "";
+        public string FromPlayer = "";
+        public double SentAt;
+
+        public bool HasNote => !string.IsNullOrEmpty(Note);
+
         public bool HasArrived(double now) => now >= ArriveAt;
     }
 
@@ -23,7 +30,7 @@ namespace RavenPost
     {
         public const string NameKey = "ravenpost_name";
         public const string InboxKey = "ravenpost_inbox";
-        private const int InboxVersion = 2;
+        private const int InboxVersion = 3;
 
         /// <summary>Seconds before arrival that the landing animation starts, so it touches down on time.</summary>
         private const float LandingLead = RavenFlight.LandingSeconds;
@@ -92,6 +99,12 @@ namespace RavenPost
                 {
                     d.FromPos = pkg.ReadVector3();
                 }
+                if (version >= 3)
+                {
+                    d.Note = pkg.ReadString();
+                    d.FromPlayer = pkg.ReadString();
+                    d.SentAt = pkg.ReadDouble();
+                }
                 list.Add(d);
             }
             return list;
@@ -109,6 +122,9 @@ namespace RavenPost
                 pkg.Write(d.Notified);
                 pkg.Write(d.Items);
                 pkg.Write(d.FromPos);
+                pkg.Write(d.Note ?? "");
+                pkg.Write(d.FromPlayer ?? "");
+                pkg.Write(d.SentAt);
             }
             zdo.Set(InboxKey, pkg.GetArray());
         }
@@ -159,6 +175,18 @@ namespace RavenPost
         public static string FormatDistance(float metres) =>
             metres >= 1000f ? $"{metres / 1000f:0.0} km" : $"{Mathf.RoundToInt(metres)} m";
 
+        private static string ArrivalMessage(Delivery d, string at)
+        {
+            bool cargo = UnpackItems(d.Items).NrOfItems() > 0;
+            if (d.HasNote && !cargo)
+            {
+                return $"Letter from {d.From} has landed at {at}";
+            }
+            return d.HasNote
+                ? $"Raven from {d.From} has landed at {at} with a letter"
+                : $"Raven from {d.From} has landed at {at}";
+        }
+
         /// <summary>Tells the player when a raven lands, wherever they are.</summary>
         public static void NotifyArrivals()
         {
@@ -200,7 +228,7 @@ namespace RavenPost
                         d.Notified = true;
                         changed = true;
                         MessageHud.instance.ShowMessage(MessageHud.MessageType.TopLeft,
-                            $"Raven from {d.From} has landed at {GetName(zdo)}");
+                            ArrivalMessage(d, GetName(zdo)));
                     }
                 }
                 if (changed)
