@@ -146,6 +146,14 @@ namespace RavenPost
                 return false;
             }
 
+            // Logging out destroys the game's UI along with our old panel; drop references to its controls.
+            s_destRows.Clear();
+            s_destTexts.Clear();
+            s_mailRows.Clear();
+            s_mailTexts.Clear();
+            s_costLines.Clear();
+            s_perch = null;
+
             s_panel = GUIManager.Instance.CreateWoodpanel(gui.m_container, new Vector2(1f, 1f), new Vector2(1f, 1f),
                 Vector2.zero, Width, Height, false);
             s_panel.name = "RavenPost_Window";
