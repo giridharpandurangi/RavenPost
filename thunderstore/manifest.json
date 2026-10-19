@@ -1,7 +1,7 @@
 {
     "name": "RavenPost",
     "version_number": "1.0.0",
-    "website_url": "https://github.com/giridharpandurangi/RavenPost",
+    "website_url": "",
     "description": "Ravens carry cargo and letters between perches at your bases. Feed them for speed, upgrade perches through the biomes, write letters and keep a journal. Single player and multiplayer.",
     "dependencies": [
         "denikson-BepInExPack_Valheim-5.4.2351",
