@@ -357,8 +357,8 @@ namespace RavenPost
                 RavenFood.WriteMeals(Zdo, meals);
             }
 
-            RavenFlight.Launch(SeatPosition, destination.GetPosition());
-            HideSeatedRaven(RavenFlight.TakeOffSeconds + 4f);
+            float shown = RavenFlight.Launch(SeatPosition, destination.GetPosition(), seconds, mealSpeed * Tier.SpeedMultiplier);
+            HideSeatedRaven(shown + 1f);
             string what = noteOnly ? "Letter" : hasNote ? "Raven and letter" : "Raven";
             player.Message(MessageHud.MessageType.Center,
                 $"{what} sent to {PostOffice.GetName(destination)} - arrives in {PostOffice.FormatDuration(seconds)}");

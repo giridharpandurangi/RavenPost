@@ -12,7 +12,9 @@ namespace RavenPost
         public const float LandingSeconds = 6f;
 
         public const float TakeOffSeconds = 12f;
+        private const float MinTakeOffSeconds = 3f;
         private const float CruiseSpeed = 5f;
+        private const float MaxCruiseSpeed = 30f;
         private const float ClimbSpeed = 1.6f;
         private const float CircleSeconds = 3f;
         private const float FadeSeconds = 1.5f;
@@ -53,6 +55,8 @@ namespace RavenPost
         private Vector3 _target;
         private Vector3 _heading;
         private float _duration;
+        private float _circleSeconds = CircleSeconds;
+        private float _cruiseSpeed = CruiseSpeed;
         private float _age;
         private Vector3 _baseScale;
 
@@ -149,8 +153,13 @@ namespace RavenPost
         }
 
         /// <summary>Circles up above the perch, then glides off toward the destination and fades out.</summary>
-        public static void Launch(Vector3 from, Vector3 to)
+        /// <summary>
+        /// Starts the take-off. It never lasts longer than the real flight, and faster ravens (better perch
+        /// and food) visibly glide faster. Returns how long the bird is shown, so the sitting raven can return.
+        /// </summary>
+        public static float Launch(Vector3 from, Vector3 to, float flightSeconds, float speedMultiplier)
         {
+            float duration = Mathf.Clamp(flightSeconds * 0.8f, MinTakeOffSeconds, TakeOffSeconds);
             var heading = to - from;
             heading.y = 0f;
             heading = heading.sqrMagnitude < 0.01f ? Vector3.forward : heading.normalized;
@@ -158,12 +167,15 @@ namespace RavenPost
             var flight = Spawn(from, heading);
             if (!flight)
             {
-                return;
+                return 0f;
             }
             flight._mode = Mode.TakeOff;
             flight._origin = from;
             flight._heading = heading;
-            flight._duration = TakeOffSeconds;
+            flight._duration = duration;
+            flight._circleSeconds = Mathf.Min(CircleSeconds, duration * 0.3f);
+            flight._cruiseSpeed = Mathf.Min(MaxCruiseSpeed, CruiseSpeed * Mathf.Max(1f, speedMultiplier));
+            return duration;
         }
 
         /// <summary>Glides in from the sender's direction and touches down on the perch after <paramref name="seconds"/>.</summary>
@@ -208,10 +220,10 @@ namespace RavenPost
         {
             Vector3 pos;
             Vector3 facing;
-            if (_age < CircleSeconds)
+            if (_age < _circleSeconds)
             {
                 // Spiral up over the perch once.
-                float t = _age / CircleSeconds;
+                float t = _age / _circleSeconds;
                 float angle = t * Mathf.PI * 2f;
                 float radius = Mathf.Lerp(0.5f, 3f, t);
                 var offset = Quaternion.LookRotation(_heading) * new Vector3(Mathf.Sin(angle), 0f, -Mathf.Cos(angle)) * radius;
@@ -221,10 +233,10 @@ namespace RavenPost
             else
             {
                 // Then glide away toward the destination, still climbing gently.
-                float cruise = _age - CircleSeconds;
+                float cruise = _age - _circleSeconds;
                 var circleEnd = _origin + Quaternion.LookRotation(_heading) * new Vector3(0f, 0f, -3f)
-                                + Vector3.up * (CircleSeconds * ClimbSpeed * 1.5f);
-                pos = circleEnd + _heading * (cruise * CruiseSpeed) + Vector3.up * (cruise * ClimbSpeed);
+                                + Vector3.up * (_circleSeconds * ClimbSpeed * 1.5f);
+                pos = circleEnd + _heading * (cruise * _cruiseSpeed) + Vector3.up * (cruise * ClimbSpeed);
                 facing = _heading;
             }
 

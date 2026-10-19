@@ -35,6 +35,17 @@ namespace RavenPost
         /// <summary>Seconds before arrival that the landing animation starts, so it touches down on time.</summary>
         private const float LandingLead = RavenFlight.LandingSeconds;
         private const float LandingViewDistance = 80f;
+        /// <summary>Short flights get a short landing, so the bird never appears long before it was sent.</summary>
+        private static float LandingLeadFor(Delivery d)
+        {
+            if (d.SentAt <= 0)
+            {
+                return LandingLead;
+            }
+            float flight = (float)(d.ArriveAt - d.SentAt);
+            return Mathf.Clamp(flight * 0.5f, 1.5f, LandingLead);
+        }
+
         private static readonly HashSet<string> s_landingsShown = new HashSet<string>();
 
         private static readonly List<ZDO> s_perches = new List<ZDO>();
@@ -205,7 +216,7 @@ namespace RavenPost
                 foreach (var d in inbox)
                 {
                     // Start the landing a few seconds early so the bird touches down as the delivery arrives.
-                    if (nearby && !d.Notified && d.ArriveAt - now <= LandingLead)
+                    if (nearby && !d.Notified && d.ArriveAt - now <= LandingLeadFor(d))
                     {
                         string key = $"{zdo.m_uid}:{d.ArriveAt}";
                         if (s_landingsShown.Add(key))
