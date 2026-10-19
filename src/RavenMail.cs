@@ -121,20 +121,20 @@ namespace RavenPost
         /// <summary>
         /// Finds the perch a letter came from: same name, nearest to where it was sent from.
         /// </summary>
-        public static ZDO FindSender(Letter letter)
+        public static PerchInfo FindSender(Letter letter)
         {
-            ZDO best = null;
+            PerchInfo best = null;
             float bestDistance = float.MaxValue;
-            foreach (var zdo in PostOffice.GetAllPerches())
+            foreach (var perch in PostOffice.GetPerches())
             {
-                if (PostOffice.GetName(zdo) != letter.From)
+                if (perch.Name != letter.From)
                 {
                     continue;
                 }
-                float distance = Vector3.Distance(zdo.GetPosition(), letter.FromPos);
+                float distance = Vector3.Distance(perch.Position, letter.FromPos);
                 if (distance < bestDistance)
                 {
-                    best = zdo;
+                    best = perch;
                     bestDistance = distance;
                 }
             }

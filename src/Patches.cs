@@ -15,6 +15,13 @@ namespace RavenPost
         }
     }
 
+    /// <summary>Registers Raven Post's network messages each time a world starts (host, client or dedicated server).</summary>
+    [HarmonyPatch(typeof(Game), "Start")]
+    internal static class GameStartPatch
+    {
+        private static void Postfix() => RavenNet.Register();
+    }
+
     /// <summary>Using a letter (hotbar key or right-click in the inventory) opens it for writing.</summary>
     [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.UseItem))]
     internal static class LetterUsePatch

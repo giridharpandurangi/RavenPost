@@ -366,11 +366,11 @@ namespace RavenPost
                     s_destTargets[i] = ZDOID.None;
                     continue;
                 }
-                var zdo = destinations[index];
-                bool isSelected = selected != null && zdo.m_uid == selected.m_uid;
-                s_destTargets[i] = zdo.m_uid;
-                s_destTexts[i].text = $"{(isSelected ? "> " : "")}{PostOffice.GetName(zdo)}  " +
-                                      $"<size=13>({PostOffice.FormatDistance(s_perch.DistanceTo(zdo))})</size>";
+                var perch = destinations[index];
+                bool isSelected = selected != null && perch.Id == selected.Id;
+                s_destTargets[i] = perch.Id;
+                s_destTexts[i].text = $"{(isSelected ? "> " : "")}{perch.Name}  " +
+                                      $"<size=13>({PostOffice.FormatDistance(s_perch.DistanceTo(perch))})</size>";
                 s_destTexts[i].color = isSelected ? Gold : Plain;
             }
 
@@ -401,14 +401,14 @@ namespace RavenPost
             if (!hasCargo && hasNote)
             {
                 float seconds = s_perch.LetterSecondsTo(selected);
-                s_info.text = $"Letter to {PostOffice.GetName(selected)}: {PostOffice.FormatDuration(seconds)}\n" +
+                s_info.text = $"Letter to {selected.Name}: {PostOffice.FormatDuration(seconds)}\n" +
                               "<size=13>A letter alone needs no meal</size>";
                 s_send.interactable = true;
                 return;
             }
 
             float flight = s_perch.FlightSecondsTo(selected);
-            s_info.text = $"To {PostOffice.GetName(selected)}: {PostOffice.FormatDuration(flight)}\n" +
+            s_info.text = $"To {selected.Name}: {PostOffice.FormatDuration(flight)}\n" +
                           $"<size=13>Cargo weight {weight:0.#}</size>" + meals;
             s_send.interactable = (hasCargo || hasNote) && !(hasCargo && s_perch.RefusesToFly);
         }
@@ -563,7 +563,7 @@ namespace RavenPost
                 return;
             }
             var destination = s_perch.SelectedDestination(s_perch.Destinations());
-            string topic = destination != null ? $"Note to {PostOffice.GetName(destination)}" : "Write a note";
+            string topic = destination != null ? $"Note to {destination.Name}" : "Write a note";
             NoteWriter.Open(s_perch, topic);
         }
 
@@ -613,7 +613,7 @@ namespace RavenPost
                 Player.m_localPlayer?.Message(MessageHud.MessageType.Center, $"Can't find the perch \"{letter.From}\" any more");
                 return;
             }
-            s_perch.Select(sender.m_uid);
+            s_perch.Select(sender.Id);
             s_tab = Tab.Send;
             s_reading = -1;
             NoteWriter.Open(s_perch, $"Reply to {letter.From}");

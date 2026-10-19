@@ -35,7 +35,62 @@ namespace RavenPost
             }
 
             PostOffice.InvalidatePerches();
+            _appliedTier = TierIndex;
             InvokeRepeating(nameof(CollectArrivals), 1f, 2f);
+            InvokeRepeating(nameof(CheckLandings), 0.5f, 0.5f);
+            InvokeRepeating(nameof(SyncTier), 2f, 2f);
+        }
+
+        private int _appliedTier;
+        private static readonly HashSet<string> s_landingsShown = new HashSet<string>();
+        private const float LandingViewDistance = 80f;
+
+        /// <summary>Another player upgraded this perch: grow the cargo here too.</summary>
+        private void SyncTier()
+        {
+            int tier = TierIndex;
+            if (tier != _appliedTier)
+            {
+                _appliedTier = tier;
+                ApplyTier(_container, Tier);
+            }
+        }
+
+        /// <summary>
+        /// Plays the landing for anyone near this perch, timed so the bird touches down as the delivery arrives.
+        /// Runs on every player's game, from the inbox that syncs with the perch.
+        /// </summary>
+        private void CheckLandings()
+        {
+            var player = Player.m_localPlayer;
+            if (Zdo == null || !player || Vector3.Distance(player.transform.position, transform.position) > LandingViewDistance)
+            {
+                return;
+            }
+            double now = PostOffice.Now;
+            foreach (var d in PostOffice.ReadInbox(Zdo))
+            {
+                double left = d.ArriveAt - now;
+                if (left < 0 || left > LandingLeadFor(d) || !s_landingsShown.Add(d.Key(Zdo.m_uid)))
+                {
+                    continue;
+                }
+                float seconds = (float)System.Math.Max(0.5, left);
+                // The landing bird takes the seat; the sitting raven reappears as it touches down.
+                HideSeatedRaven(seconds);
+                RavenFlight.Land(SeatPosition, d.FromPos, seconds);
+            }
+        }
+
+        /// <summary>Short flights get a short landing, so the bird never appears long before it was sent.</summary>
+        private static float LandingLeadFor(Delivery d)
+        {
+            if (d.SentAt <= 0)
+            {
+                return RavenFlight.LandingSeconds;
+            }
+            float flight = (float)(d.ArriveAt - d.SentAt);
+            return Mathf.Clamp(flight * 0.5f, 1.5f, RavenFlight.LandingSeconds);
         }
 
         private static bool s_validatedTiers;
@@ -84,13 +139,8 @@ namespace RavenPost
         public void Upgrade(Player player)
         {
             var next = NextTier;
-            if (Zdo == null || !player || next == null)
+            if (Zdo == null || !player || next == null || !EnsureOwner(player))
             {
-                return;
-            }
-            if (!_nview.IsOwner())
-            {
-                player.Message(MessageHud.MessageType.Center, "Someone else is using this perch");
                 return;
             }
             var missing = next.MissingItems();
@@ -132,7 +182,7 @@ namespace RavenPost
 
         public void SetText(string text)
         {
-            if (Zdo == null || !_nview.IsOwner())
+            if (Zdo == null || !EnsureOwner(Player.m_localPlayer))
             {
                 return;
             }
@@ -141,27 +191,56 @@ namespace RavenPost
             PostOffice.InvalidatePerches();
         }
 
-        public List<ZDO> Destinations() =>
-            PostOffice.GetAllPerches().Where(z => z.m_uid != Zdo.m_uid).ToList();
+        internal List<PerchInfo> Destinations() =>
+            Zdo == null ? new List<PerchInfo>() : PostOffice.GetPerches().Where(p => p.Id != Zdo.m_uid).ToList();
 
-        public ZDO SelectedDestination(List<ZDO> destinations)
+        internal PerchInfo SelectedDestination(List<PerchInfo> destinations)
         {
             if (destinations.Count == 0)
             {
                 return null;
             }
-            var found = destinations.FirstOrDefault(z => z.m_uid == _selectedDestination);
+            var found = destinations.FirstOrDefault(p => p.Id == _selectedDestination);
             if (found == null)
             {
                 found = destinations[0];
-                _selectedDestination = found.m_uid;
+                _selectedDestination = found.Id;
             }
             return found;
         }
 
         public void Select(ZDOID destination) => _selectedDestination = destination;
 
-        public float DistanceTo(ZDO destination) => Vector3.Distance(transform.position, destination.GetPosition());
+        internal float DistanceTo(PerchInfo destination) => Vector3.Distance(transform.position, destination.Position);
+
+        /// <summary>
+        /// In multiplayer only the perch's owner should change it. The player using a perch becomes its owner
+        /// (opening it does this too); returns false if someone else has it open.
+        /// </summary>
+        private bool EnsureOwner(Player player)
+        {
+            if (Zdo == null)
+            {
+                return false;
+            }
+            if (_nview.IsOwner())
+            {
+                return true;
+            }
+            if (!_container.IsInUse() && Zdo.GetInt(ZDOVars.s_inUse) == 0)
+            {
+                _nview.ClaimOwnership();
+            }
+            if (!_nview.IsOwner())
+            {
+                if (player)
+                {
+                    player.Message(MessageHud.MessageType.Center, "Someone else is using this perch");
+                }
+                return false;
+            }
+            return true;
+        }
 
         public float CargoWeight => _container.GetInventory()?.GetTotalWeight() ?? 0f;
 
@@ -207,11 +286,11 @@ namespace RavenPost
         }
 
         /// <summary>Flight time to <paramref name="destination"/> with the current cargo and next meal.</summary>
-        public float FlightSecondsTo(ZDO destination) =>
+        internal float FlightSecondsTo(PerchInfo destination) =>
             PostOffice.FlightSeconds(DistanceTo(destination), CargoWeight) / (NextMealSpeed * Tier.SpeedMultiplier);
 
         /// <summary>A letter alone: no cargo weight, no meal, just the perch's speed.</summary>
-        public float LetterSecondsTo(ZDO destination) =>
+        internal float LetterSecondsTo(PerchInfo destination) =>
             PostOffice.FlightSeconds(DistanceTo(destination), 0f) / Tier.SpeedMultiplier;
 
         /// <summary>Feeds one of <paramref name="item"/> from the player's inventory. False if ravens won't eat it.</summary>
@@ -226,9 +305,8 @@ namespace RavenPost
             {
                 return false;
             }
-            if (!_nview.IsOwner())
+            if (!EnsureOwner(player))
             {
-                player.Message(MessageHud.MessageType.Center, "Someone else is using this perch");
                 return true;
             }
 
@@ -274,19 +352,14 @@ namespace RavenPost
             {
                 return;
             }
-            int index = destinations.FindIndex(z => z.m_uid == _selectedDestination);
-            _selectedDestination = destinations[(index + 1) % destinations.Count].m_uid;
+            int index = destinations.FindIndex(p => p.Id == _selectedDestination);
+            _selectedDestination = destinations[(index + 1) % destinations.Count].Id;
         }
 
         public void Send(Player player)
         {
-            if (Zdo == null || !PostOffice.IsActive)
+            if (Zdo == null || !PostOffice.IsActive || !EnsureOwner(player))
             {
-                return;
-            }
-            if (!_nview.IsOwner())
-            {
-                player.Message(MessageHud.MessageType.Center, "Someone else is using this perch");
                 return;
             }
 
@@ -328,7 +401,7 @@ namespace RavenPost
             var meals = Meals;
             float mealSpeed = noteOnly ? 1f : NextMealSpeed;
 
-            float distance = Vector3.Distance(transform.position, destination.GetPosition());
+            float distance = DistanceTo(destination);
             float weight = inventory.GetTotalWeight();
             float seconds = PostOffice.FlightSeconds(distance, weight) / (mealSpeed * Tier.SpeedMultiplier);
 
@@ -344,11 +417,9 @@ namespace RavenPost
                 SentAt = PostOffice.Now,
             };
 
-            var inbox = PostOffice.ReadInbox(destination);
-            inbox.Add(delivery);
-            PostOffice.WriteInbox(destination, inbox);
+            // The server stores it on the destination (or returns it here if that perch is gone).
+            RavenNet.SendDelivery(destination.Id, Zdo.m_uid, delivery);
 
-            // Only empty the cargo once the delivery is safely stored on the destination.
             inventory.RemoveAll();
             Draft = "";
             if (!noteOnly && Plugin.UseFood.Value && meals.Count > 0)
@@ -357,12 +428,14 @@ namespace RavenPost
                 RavenFood.WriteMeals(Zdo, meals);
             }
 
-            float shown = RavenFlight.Launch(SeatPosition, destination.GetPosition(), seconds, mealSpeed * Tier.SpeedMultiplier);
+            float speed = mealSpeed * Tier.SpeedMultiplier;
+            float shown = RavenFlight.Launch(SeatPosition, destination.Position, seconds, speed);
             HideSeatedRaven(shown + 1f);
+            RavenNet.BroadcastTakeOff(SeatPosition, destination.Position, seconds, speed);
             string what = noteOnly ? "Letter" : hasNote ? "Raven and letter" : "Raven";
             player.Message(MessageHud.MessageType.Center,
-                $"{what} sent to {PostOffice.GetName(destination)} - arrives in {PostOffice.FormatDuration(seconds)}");
-            Plugin.Log.LogInfo($"Sent {items.Count} stack(s) from '{PerchName}' to '{PostOffice.GetName(destination)}', " +
+                $"{what} sent to {destination.Name} - arrives in {PostOffice.FormatDuration(seconds)}");
+            Plugin.Log.LogInfo($"Sent {items.Count} stack(s) from '{PerchName}' to '{destination.Name}', " +
                                $"{distance:0} m, {weight:0.#} weight, note {(hasNote ? "yes" : "no")}, meal {RavenFood.FormatSpeed(mealSpeed)}, {seconds:0} s");
         }
 
@@ -372,7 +445,7 @@ namespace RavenPost
             get => Zdo?.GetString(RavenMail.DraftKey) ?? "";
             set
             {
-                if (Zdo != null && _nview.IsOwner())
+                if (Zdo != null && EnsureOwner(Player.m_localPlayer))
                 {
                     string text = (value ?? "").Trim();
                     if (text.Length > RavenMail.MaxNoteLength)
@@ -396,7 +469,7 @@ namespace RavenPost
             {
                 return null;
             }
-            if (!letters[index].Read && _nview.IsOwner())
+            if (!letters[index].Read && EnsureOwner(null))
             {
                 letters[index].Read = true;
                 RavenMail.Write(Zdo, letters);
@@ -407,7 +480,7 @@ namespace RavenPost
         public void DeleteLetter(int index)
         {
             var letters = Mailbox;
-            if (index >= 0 && index < letters.Count && _nview.IsOwner())
+            if (index >= 0 && index < letters.Count && EnsureOwner(Player.m_localPlayer))
             {
                 letters.RemoveAt(index);
                 RavenMail.Write(Zdo, letters);
@@ -552,7 +625,6 @@ namespace RavenPost
 
             if (!PostOffice.IsActive)
             {
-                sb.Append("\n<color=grey>Raven Post v0.1 works in single player only</color>");
                 return sb.ToString();
             }
 
@@ -564,11 +636,11 @@ namespace RavenPost
             }
             else
             {
-                float distance = Vector3.Distance(transform.position, destination.GetPosition());
+                float distance = DistanceTo(destination);
                 float seconds = FlightSecondsTo(destination);
-                sb.Append($"\n[<color=yellow><b>{Plugin.NextDestinationKey.Value}</b></color>] To: {PostOffice.GetName(destination)} " +
+                sb.Append($"\n[<color=yellow><b>{Plugin.NextDestinationKey.Value}</b></color>] To: {destination.Name} " +
                           $"({PostOffice.FormatDistance(distance)}, {PostOffice.FormatDuration(seconds)})" +
-                          (destinations.Count > 1 ? $"  <color=grey>{destinations.FindIndex(z => z.m_uid == destination.m_uid) + 1}/{destinations.Count}</color>" : ""));
+                          (destinations.Count > 1 ? $"  <color=grey>{destinations.FindIndex(p => p.Id == destination.Id) + 1}/{destinations.Count}</color>" : ""));
                 sb.Append($"\n[<color=yellow><b>{Plugin.SendKey.Value}</b></color>] Send cargo");
             }
             sb.Append($"\n[<color=yellow><b>{Plugin.RenameKey.Value}</b></color>] Rename");

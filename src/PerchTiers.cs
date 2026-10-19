@@ -75,10 +75,10 @@ namespace RavenPost
                 Name = name,
                 Biome = biome,
                 Cost = config.Bind(section, "UpgradeCost", cost,
-                    index == 0 ? "Not used: this is the tier you build." : "Items to upgrade to this tier, as PrefabName:Amount, comma-separated."),
-                Width = config.Bind(section, "CargoWidth", w, "Cargo slots per row (max 8)."),
-                Height = config.Bind(section, "CargoHeight", h, "Cargo rows (scrolls when tall)."),
-                Speed = config.Bind(section, "Speed", speed, "Flight speed multiplier; multiplies with the meal's speed."),
+                    Plugin.Synced(index == 0 ? "Not used: this is the tier you build." : "Items to upgrade to this tier, as PrefabName:Amount, comma-separated.")),
+                Width = config.Bind(section, "CargoWidth", w, Plugin.Synced("Cargo slots per row (max 8).")),
+                Height = config.Bind(section, "CargoHeight", h, Plugin.Synced("Cargo rows (scrolls when tall).")),
+                Speed = config.Bind(section, "Speed", speed, Plugin.Synced("Flight speed multiplier; multiplies with the meal's speed.")),
             });
         }
 

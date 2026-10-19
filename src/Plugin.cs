@@ -5,17 +5,19 @@ using HarmonyLib;
 using Jotunn.Configs;
 using Jotunn.Entities;
 using Jotunn.Managers;
+using Jotunn.Utils;
 using UnityEngine;
 
 namespace RavenPost
 {
     [BepInPlugin(ModGuid, ModName, ModVersion)]
     [BepInDependency(Jotunn.Main.ModGuid)]
+    [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
     public class Plugin : BaseUnityPlugin
     {
         public const string ModGuid = "com.ravenpost.valheim";
         public const string ModName = "Raven Post";
-        public const string ModVersion = "0.6.0";
+        public const string ModVersion = "0.7.0";
 
         public const string PerchPrefabName = "piece_ravenperch";
 
@@ -39,35 +41,38 @@ namespace RavenPost
         internal static ConfigEntry<KeyCode> RenameKey;
 
         private Harmony _harmony;
-        private float _nextNotifyCheck;
+
+        /// <summary>Gameplay settings come from the server so everyone plays by the same rules.</summary>
+        internal static ConfigDescription Synced(string description) =>
+            new ConfigDescription(description, null, new ConfigurationManagerAttributes { IsAdminOnly = true });
 
         private void Awake()
         {
             Log = Logger;
 
             SecondsPer100m = Config.Bind("Flight", "SecondsPer100m", 10f,
-                "Real seconds a raven needs to fly 100 metres (in-game time, so sleeping speeds it up).");
+                Synced("Real seconds a raven needs to fly 100 metres (in-game time, so sleeping speeds it up)."));
             MinFlightSeconds = Config.Bind("Flight", "MinFlightSeconds", 5f,
-                "Shortest possible delivery time, in seconds.");
+                Synced("Shortest possible delivery time, in seconds."));
             WeightSlowdown = Config.Bind("Flight", "WeightSlowdown", 0.5f,
-                "Extra flight time per 100 weight of cargo. 0.5 = +50% per 100 weight.");
+                Synced("Extra flight time per 100 weight of cargo. 0.5 = +50% per 100 weight."));
             AllowNonTeleportable = Config.Bind("Cargo", "AllowNonTeleportable", true,
-                "Let ravens carry ore and metals that portals block.");
+                Synced("Let ravens carry ore and metals that portals block."));
             UseFood = Config.Bind("Food", "UseFood", true,
-                "Ravens eat one stored meal per flight; better food flies faster. Turn off to ignore food entirely.");
+                Synced("Ravens eat one stored meal per flight; better food flies faster. Turn off to ignore food entirely."));
             Hungry = Config.Bind("Food", "HungryRaven", HungryBehaviour.FlySlowly,
-                "What a raven does with no meals stored: FlySlowly (at HungrySpeed) or Refuse to fly.");
+                Synced("What a raven does with no meals stored: FlySlowly (at HungrySpeed) or Refuse to fly."));
             HungrySpeed = Config.Bind("Food", "HungrySpeed", 0.5f,
-                "Speed multiplier for a hungry raven when HungryRaven = FlySlowly. 0.5 = takes twice as long.");
+                Synced("Speed multiplier for a hungry raven when HungryRaven = FlySlowly. 0.5 = takes twice as long."));
             MaxMeals = Config.Bind("Food", "MaxMeals", 10,
-                "How many meals a perch can store.");
+                Synced("How many meals a perch can store."));
             MaxFoodSpeed = Config.Bind("Food", "MaxFoodSpeed", 4f,
-                "Fastest a meal can make a raven. Cooked food gives 1 + health / 50, e.g. 30 hp = x1.6, 75 hp = x2.5.");
+                Synced("Fastest a meal can make a raven. Cooked food gives 1 + health / 50, e.g. 30 hp = x1.6, 75 hp = x2.5."));
             RawMeatSpeed = Config.Bind("Food", "RawMeatSpeed", 1.25f,
-                "Speed multiplier for raw meat.");
+                Synced("Speed multiplier for raw meat."));
             RawMeatItems = Config.Bind("Food", "RawMeatItems",
                 "RawMeat,DeerMeat,NeckTail,WolfMeat,LoxMeat,SerpentMeat,BugMeat,HareMeat,ChickenMeat,AsksvinMeat,VoltureMeat,BoneMawSerpentMeat",
-                "Comma-separated item prefab names ravens eat raw.");
+                Synced("Comma-separated item prefab names ravens eat raw."));
             NextDestinationKey = Config.Bind("Keys", "NextDestination", KeyCode.J,
                 "While looking at a perch: choose the next destination.");
             SendKey = Config.Bind("Keys", "Send", KeyCode.K,
@@ -138,12 +143,7 @@ namespace RavenPost
                 return;
             }
 
-            if (Time.time >= _nextNotifyCheck)
-            {
-                _nextNotifyCheck = Time.time + 1f;
-                PostOffice.NotifyArrivals();
-            }
-
+            RavenNet.ServerTick();
             HandleKeys();
         }
 
