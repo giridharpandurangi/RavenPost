@@ -163,7 +163,8 @@ namespace RavenPost
                 InventoryGui.instance.Hide();
             }
             TextInput.instance.RequestText(new LetterWriter(player, item, reopen),
-                "Write your letter  (\\n = new line)", MaxLength);
+                // A zero-width space stops the text box from turning the hint's own "\n" into a line break.
+                "Write your letter  (type \\​n for a new line)", MaxLength);
         }
 
         private class LetterWriter : TextReceiver
