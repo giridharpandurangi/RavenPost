@@ -342,7 +342,7 @@ namespace RavenPost
                     return $"Flights {PeriodName}: {FlightsUsed}/{max}";
                 }
                 int nextDay = (CurrentPeriod + 1) * PeriodDays;
-                return $"<color=#ff6060>The raven is tired ({max}/{max} {PeriodName}) - rests until day {nextDay}</color>";
+                return $"<color=#ff6060>Tired ({max}/{max} {PeriodName}) - flies again on day {nextDay}</color>";
             }
         }
 

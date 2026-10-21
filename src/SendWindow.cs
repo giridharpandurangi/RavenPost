@@ -210,6 +210,7 @@ namespace RavenPost
             y -= 52f;
 
             s_info = AddText(t, "", y, 16, Plain, 66f);
+            s_info.horizontalOverflow = HorizontalWrapMode.Wrap; // long status lines wrap instead of being cut off
             y -= 52f;
             s_noteLine = AddText(t, "", y, 14, Faded, 34f);
             y -= 40f;
