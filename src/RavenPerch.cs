@@ -285,6 +285,67 @@ namespace RavenPost
             }
         }
 
+        // ------------------------------------------------------------ limits (both off by default)
+
+        private const string FlightLogKey = "ravenpost_flights"; // "<period>:<flights used>"
+
+        public static bool WeightLimited => Plugin.MaxCargoWeight.Value > 0f;
+
+        public static bool TooHeavy(float weight) => WeightLimited && weight > Plugin.MaxCargoWeight.Value + 0.001f;
+
+        public static bool FlightsLimited => Plugin.MaxFlightsPerPeriod.Value > 0;
+
+        private static int PeriodDays => Mathf.Max(1, Plugin.PeriodDays.Value);
+
+        /// <summary>Which period (block of PeriodDays in-game days) it is now.</summary>
+        private static int CurrentPeriod => RavenMail.Day(PostOffice.Now) / PeriodDays;
+
+        /// <summary>Flights this perch has used in the current period.</summary>
+        public int FlightsUsed
+        {
+            get
+            {
+                var parts = (Zdo?.GetString(FlightLogKey) ?? "").Split(':');
+                if (parts.Length == 2 && int.TryParse(parts[0], out int period) && int.TryParse(parts[1], out int used) &&
+                    period == CurrentPeriod)
+                {
+                    return used;
+                }
+                return 0; // a new period has started
+            }
+        }
+
+        public int FlightsLeft => FlightsLimited ? Mathf.Max(0, Plugin.MaxFlightsPerPeriod.Value - FlightsUsed) : int.MaxValue;
+
+        private void RecordFlight()
+        {
+            if (FlightsLimited && Zdo != null)
+            {
+                Zdo.Set(FlightLogKey, $"{CurrentPeriod}:{FlightsUsed + 1}");
+            }
+        }
+
+        private static string PeriodName => PeriodDays == 1 ? "today" : $"these {PeriodDays} days";
+
+        /// <summary>Short status for hover text and the send window; empty when flights are unlimited.</summary>
+        public string FlightsStatus
+        {
+            get
+            {
+                if (!FlightsLimited)
+                {
+                    return "";
+                }
+                int max = Plugin.MaxFlightsPerPeriod.Value;
+                if (FlightsLeft > 0)
+                {
+                    return $"Flights {PeriodName}: {FlightsUsed}/{max}";
+                }
+                int nextDay = (CurrentPeriod + 1) * PeriodDays;
+                return $"<color=#ff6060>The raven is tired ({max}/{max} {PeriodName}) - rests until day {nextDay}</color>";
+            }
+        }
+
         /// <summary>Flight time to <paramref name="destination"/> with the current cargo and next meal.</summary>
         internal float FlightSecondsTo(PerchInfo destination) =>
             PostOffice.FlightSeconds(DistanceTo(destination), CargoWeight) / (NextMealSpeed * Tier.SpeedMultiplier);
@@ -393,6 +454,21 @@ namespace RavenPost
                 }
             }
 
+            float weight = inventory.GetTotalWeight();
+            if (!noteOnly && TooHeavy(weight))
+            {
+                player.Message(MessageHud.MessageType.Center,
+                    $"Too heavy for the raven: {weight:0.#} / {Plugin.MaxCargoWeight.Value:0.#}");
+                return;
+            }
+
+            bool usesFlight = !noteOnly || Plugin.LettersCountAsFlights.Value;
+            if (usesFlight && FlightsLimited && FlightsLeft <= 0)
+            {
+                player.Message(MessageHud.MessageType.Center, "The raven is tired - it rests until the next day");
+                return;
+            }
+
             if (!noteOnly && RefusesToFly)
             {
                 player.Message(MessageHud.MessageType.Center, "Your raven is hungry - feed it first");
@@ -402,7 +478,6 @@ namespace RavenPost
             float mealSpeed = noteOnly ? 1f : NextMealSpeed;
 
             float distance = DistanceTo(destination);
-            float weight = inventory.GetTotalWeight();
             float seconds = PostOffice.FlightSeconds(distance, weight) / (mealSpeed * Tier.SpeedMultiplier);
 
             var delivery = new Delivery
@@ -422,6 +497,10 @@ namespace RavenPost
 
             inventory.RemoveAll();
             Draft = "";
+            if (usesFlight)
+            {
+                RecordFlight();
+            }
             if (!noteOnly && Plugin.UseFood.Value && meals.Count > 0)
             {
                 meals.RemoveAt(0);
@@ -648,6 +727,10 @@ namespace RavenPost
             {
                 sb.Append($"\n{MealsStatus}");
                 sb.Append("\n<color=grey>Use food from your hotbar on the perch to feed</color>");
+            }
+            if (FlightsLimited)
+            {
+                sb.Append($"\n{FlightsStatus}");
             }
 
             int unread = UnreadLetters;

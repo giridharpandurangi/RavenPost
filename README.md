@@ -1,4 +1,4 @@
-# Raven Post (v1.0)
+# Raven Post (v1.1)
 
 A Valheim mod: build Raven Perches at your bases, and ravens carry items between them.
 Works in single player, hosted games and dedicated servers. Everyone (server and players) needs the mod.
@@ -78,6 +78,8 @@ you like), so other mods can't get in the way.
   x1.25. Perch speed and meal speed multiply. A hungry raven flies at x0.5, or refuses to fly if `HungryRaven = Refuse`. `UseFood = false`
   ignores food completely.
 - Ravens can carry ore and metal by default (`AllowNonTeleportable`).
+- Optional limits (off by default): `MaxCargoWeight` per flight, and `MaxFlightsPerPeriod` per perch per
+  `PeriodDays` in-game days (letters alone don't count unless `LettersCountAsFlights`).
 - If the destination is full, the rest waits in the perch until you make room.
 - A perch with deliveries waiting or in flight can't be deconstructed. If it gets destroyed anyway, the
   items drop on the ground there.

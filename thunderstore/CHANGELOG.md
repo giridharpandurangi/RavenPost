@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0
+
+Two optional balance settings (both off by default, set by the server in multiplayer):
+
+- `MaxCargoWeight`: the heaviest cargo a raven will carry in one flight, for example 500.
+- `MaxFlightsPerPeriod` + `PeriodDays`: how many ravens each perch can send per in-game day (or per
+  few days). A letter on its own doesn't count unless `LettersCountAsFlights` is on.
+
+The window and hover text show the weight limit and flights left.
+
 ## 1.0.0
 
 First public release.

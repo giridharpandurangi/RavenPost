@@ -398,19 +398,33 @@ namespace RavenPost
                 return;
             }
 
+            bool limited = RavenPerch.FlightsLimited;
+            bool tired = limited && s_perch.FlightsLeft <= 0;
+            string flights = limited ? $"\n<size=14>{s_perch.FlightsStatus}</size>" : "";
+
             if (!hasCargo && hasNote)
             {
+                bool letterUsesFlight = Plugin.LettersCountAsFlights.Value;
                 float seconds = s_perch.LetterSecondsTo(selected);
                 s_info.text = $"Letter to {selected.Name}: {PostOffice.FormatDuration(seconds)}\n" +
-                              "<size=13>A letter alone needs no meal</size>";
-                s_send.interactable = true;
+                              "<size=13>A letter alone needs no meal</size>" + (letterUsesFlight ? flights : "");
+                s_send.interactable = !(letterUsesFlight && tired);
                 return;
+            }
+
+            bool tooHeavy = RavenPerch.TooHeavy(weight);
+            string weightText = RavenPerch.WeightLimited
+                ? $"Cargo weight {weight:0.#} / {Plugin.MaxCargoWeight.Value:0.#}"
+                : $"Cargo weight {weight:0.#}";
+            if (tooHeavy)
+            {
+                weightText = $"<color=#ff6060>{weightText} - too heavy</color>";
             }
 
             float flight = s_perch.FlightSecondsTo(selected);
             s_info.text = $"To {selected.Name}: {PostOffice.FormatDuration(flight)}\n" +
-                          $"<size=13>Cargo weight {weight:0.#}</size>" + meals;
-            s_send.interactable = (hasCargo || hasNote) && !(hasCargo && s_perch.RefusesToFly);
+                          $"<size=13>{weightText}</size>" + meals + flights;
+            s_send.interactable = (hasCargo || hasNote) && !(hasCargo && (s_perch.RefusesToFly || tooHeavy || tired));
         }
 
         /// <summary>Letters newest first.</summary>

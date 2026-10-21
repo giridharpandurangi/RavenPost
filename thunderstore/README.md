@@ -63,6 +63,13 @@ It uses in-game time, so sleeping speeds deliveries up.
 flight speed, cargo rules, food (on/off, hungry behaviour, speeds, raw meats), every tier's cost, size
 and speed, and the keys.
 
+**Balance options** (off by default):
+
+- `Cargo / MaxCargoWeight`: heaviest cargo per flight, for example `500`. `0` = no limit.
+- `Limits / MaxFlightsPerPeriod`: ravens each perch can send per period, for example `5`. `0` = unlimited.
+- `Limits / PeriodDays`: period length in in-game days (`1` = per day; sleeping counts).
+- `Limits / LettersCountAsFlights`: whether a letter on its own uses up a flight (off by default).
+
 ## Compatibility
 
 - Made for Valheim 1.0.20 with BepInExPack 5.4.2351 and Jötunn 2.30.2.

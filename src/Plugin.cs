@@ -17,7 +17,7 @@ namespace RavenPost
     {
         public const string ModGuid = "com.ravenpost.valheim";
         public const string ModName = "Raven Post";
-        public const string ModVersion = "1.0.0";
+        public const string ModVersion = "1.1.0";
 
         public const string PerchPrefabName = "piece_ravenperch";
 
@@ -27,6 +27,10 @@ namespace RavenPost
         internal static ConfigEntry<float> MinFlightSeconds;
         internal static ConfigEntry<float> WeightSlowdown;
         internal static ConfigEntry<bool> AllowNonTeleportable;
+        internal static ConfigEntry<float> MaxCargoWeight;
+        internal static ConfigEntry<int> MaxFlightsPerPeriod;
+        internal static ConfigEntry<int> PeriodDays;
+        internal static ConfigEntry<bool> LettersCountAsFlights;
         internal static ConfigEntry<float> MaxFoodSpeed;
         internal enum HungryBehaviour { FlySlowly, Refuse }
 
@@ -58,6 +62,14 @@ namespace RavenPost
                 Synced("Extra flight time per 100 weight of cargo. 0.5 = +50% per 100 weight."));
             AllowNonTeleportable = Config.Bind("Cargo", "AllowNonTeleportable", true,
                 Synced("Let ravens carry ore and metals that portals block."));
+            MaxCargoWeight = Config.Bind("Cargo", "MaxCargoWeight", 0f,
+                Synced("Heaviest cargo a raven will carry in one flight. 0 = no limit (500 is a good balanced value)."));
+            MaxFlightsPerPeriod = Config.Bind("Limits", "MaxFlightsPerPeriod", 0,
+                Synced("How many ravens each perch can send per period. 0 = unlimited."));
+            PeriodDays = Config.Bind("Limits", "PeriodDays", 1,
+                Synced("Length of the period in in-game days (1 = per day). Resets when a new period starts; sleeping counts."));
+            LettersCountAsFlights = Config.Bind("Limits", "LettersCountAsFlights", false,
+                Synced("Whether a letter sent without cargo uses up one of the perch's flights."));
             UseFood = Config.Bind("Food", "UseFood", true,
                 Synced("Ravens eat one stored meal per flight; better food flies faster. Turn off to ignore food entirely."));
             Hungry = Config.Bind("Food", "HungryRaven", HungryBehaviour.FlySlowly,
