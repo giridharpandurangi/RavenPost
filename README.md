@@ -18,7 +18,7 @@ dotnet build -c Release -p:Deploy=true
 ```
 
 Paths are set at the top of `RavenPost.csproj` (`ValheimDir`, `ProfileDir`, `ServerDir`). The default
-profile is "Testing". Pass `-p:ProfileDir=...` to use another. If the local dedicated server in `ServerDir`
+profile is "Test". Pass `-p:ProfileDir=...` to use another. If the local dedicated server in `ServerDir`
 has BepInEx installed, the DLL is copied there too.
 
 To make the Thunderstore package:

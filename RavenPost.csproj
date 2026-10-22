@@ -14,13 +14,16 @@
   <!-- Edit these two paths if your install or r2modman profile changes. -->
   <PropertyGroup>
     <ValheimDir Condition="'$(ValheimDir)' == ''">F:\SteamLibrary\steamapps\common\Valheim</ValheimDir>
-    <ProfileDir Condition="'$(ProfileDir)' == ''">$(APPDATA)\r2modmanPlus-local\Valheim\profiles\Testing</ProfileDir>
+    <ProfileDir Condition="'$(ProfileDir)' == ''">$(APPDATA)\r2modmanPlus-local\Valheim\profiles\Test</ProfileDir>
     <ManagedDir>$(ValheimDir)\valheim_Data\Managed</ManagedDir>
     <BepInExDir>$(ProfileDir)\BepInEx</BepInExDir>
     <!-- Set to true (dotnet build -p:Deploy=true) to copy the DLL into the profile's plugins folder. -->
     <Deploy Condition="'$(Deploy)' == ''">false</Deploy>
     <!-- Local dedicated server for multiplayer testing; deployed to as well when it has BepInEx. -->
     <ServerDir Condition="'$(ServerDir)' == ''">F:\SteamLibrary\steamapps\common\Valheim dedicated server</ServerDir>
+    <!-- BepInEx/Jotunn DLLs to compile against: the profile's, or the server's if the profile lacks Jotunn. -->
+    <RefBepInExDir>$(BepInExDir)</RefBepInExDir>
+    <RefBepInExDir Condition="!Exists('$(BepInExDir)\plugins\ValheimModding-Jotunn\Jotunn.dll') And Exists('$(ServerDir)\BepInEx\plugins\ValheimModding-Jotunn\Jotunn.dll')">$(ServerDir)\BepInEx</RefBepInExDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,9 +31,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="BepInEx"><HintPath>$(BepInExDir)\core\BepInEx.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="0Harmony"><HintPath>$(BepInExDir)\core\0Harmony.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Jotunn"><HintPath>$(BepInExDir)\plugins\ValheimModding-Jotunn\Jotunn.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="BepInEx"><HintPath>$(RefBepInExDir)\core\BepInEx.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(RefBepInExDir)\core\0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Jotunn"><HintPath>$(RefBepInExDir)\plugins\ValheimModding-Jotunn\Jotunn.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="assembly_valheim"><HintPath>$(ManagedDir)\assembly_valheim.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="assembly_utils"><HintPath>$(ManagedDir)\assembly_utils.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="assembly_guiutils"><HintPath>$(ManagedDir)\assembly_guiutils.dll</HintPath><Private>false</Private></Reference>
