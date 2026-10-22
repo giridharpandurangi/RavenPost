@@ -1,4 +1,4 @@
-# Raven Post (v1.2)
+# Raven Post (v1.2.1)
 
 A Valheim mod: build Raven Perches at your bases, and ravens carry items between them.
 Works in single player, hosted games and dedicated servers. Everyone (server and players) needs the mod.
@@ -125,4 +125,9 @@ All of these are in `BepInEx/config/com.ravenpost.valheim.cfg` after the first l
 | Done (v0.5) | Perch upgrades | Wooden, Bronze, Iron tiers: more cargo slots, faster ravens, longer range | Small–Medium |
 | Done (v0.6) | Letter items | Craftable letters that keep their text, can be stored and collected | Medium |
 | Done (v0.7) | Multiplayer | Send cargo and mail to friends' perches on a server | Large |
-| Ready (v1.0) | Publish on Thunderstore | Icon, manifest and description so others can install it with r2modman | Small |
+| Done (v1.0) | Publish on Thunderstore | Icon, manifest and description so others can install it with r2modman | Small |
+| Idea | Tier visuals | Different chest model and post look/glow per perch tier | Medium |
+
+## Support
+
+If you enjoy Raven Post, you can support it on [Ko-fi](https://ko-fi.com/faasnu).

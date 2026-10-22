@@ -77,6 +77,10 @@ and speed, and the keys.
 - Made for Valheim 1.0.20 with BepInExPack 5.4.2351 and Jötunn 2.30.2.
 - Mods that resize **all** containers may also resize perches. Perches set their own size per tier.
 
+## Support
+
+If you enjoy Raven Post, you can buy me a coffee on **[Ko-fi](https://ko-fi.com/faasnu)**. Thank you! ☕
+
 ## Credits
 
 Made by **Faasnu**. MIT license.

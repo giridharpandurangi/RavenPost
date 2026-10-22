@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1
+
+- Added a Support section with a Ko-fi link. No gameplay changes.
+
 ## 1.2.0
 
 - Each perch tier can now have its own cargo weight limit (`MaxCargoWeight` in every `Tier` section), so
