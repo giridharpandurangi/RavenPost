@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0
+
+- Each perch tier can now have its own cargo weight limit (`MaxCargoWeight` in every `Tier` section), so
+  upgrades can carry more. `0` (default) uses the general `Cargo / MaxCargoWeight`, which is still off by
+  default, so nothing changes unless you set it.
+- The Perch tab shows the weight limit of the current and next tier when one is set.
+
 ## 1.1.0
 
 Two optional balance settings (both off by default, set by the server in multiplayer):

@@ -270,7 +270,7 @@ namespace RavenPost
             s_perchView = AddView("PerchView");
             var t = s_perchView.transform;
             s_tierHeader = AddText(t, "", -122f, 20, Gold, 30f);
-            s_tierStats = AddText(t, "", -152f, 15, Plain, 26f);
+            s_tierStats = AddText(t, "", -152f, 13, Plain, 26f);
             s_perchMeals = AddText(t, "", -184f, 14, Plain, 26f);
             s_perchFeed = AddButton(t, "Feed", new Vector2(0f, -220f), 130f, OnFeedClicked);
 
@@ -413,9 +413,9 @@ namespace RavenPost
                 return;
             }
 
-            bool tooHeavy = RavenPerch.TooHeavy(weight);
-            string weightText = RavenPerch.WeightLimited
-                ? $"Cargo weight {weight:0.#} / {Plugin.MaxCargoWeight.Value:0.#}"
+            bool tooHeavy = s_perch.TooHeavy(weight);
+            string weightText = s_perch.WeightLimited
+                ? $"Cargo weight {weight:0.#} / {s_perch.MaxCargoWeight:0.#}"
                 : $"Cargo weight {weight:0.#}";
             if (tooHeavy)
             {
@@ -492,7 +492,8 @@ namespace RavenPost
         {
             var tier = s_perch.Tier;
             s_tierHeader.text = $"{tier.Name}";
-            s_tierStats.text = $"{tier.Biome}  -  cargo {tier.CargoWidth}x{tier.CargoHeight}, speed {RavenFood.FormatSpeed(tier.SpeedMultiplier)}";
+            s_tierStats.text = $"{tier.Biome} - cargo {tier.CargoWidth}x{tier.CargoHeight}, speed {RavenFood.FormatSpeed(tier.SpeedMultiplier)}" +
+                               WeightSuffix(tier);
             bool food = Plugin.UseFood.Value;
             s_perchMeals.text = food ? s_perch.MealsStatus : "";
             s_perchFeed.gameObject.SetActive(food);
@@ -510,7 +511,7 @@ namespace RavenPost
             }
 
             s_nextHeader.text = $"Next: {next.Name}\n<size=13>{next.Biome} - cargo {next.CargoWidth}x{next.CargoHeight}, " +
-                                $"speed {RavenFood.FormatSpeed(next.SpeedMultiplier)}</size>";
+                                $"speed {RavenFood.FormatSpeed(next.SpeedMultiplier)}{WeightSuffix(next)}</size>";
             var reqs = next.Requirements();
             var inventory = Player.m_localPlayer ? Player.m_localPlayer.GetInventory() : null;
             bool affordable = reqs.Count > 0 && inventory != null;
@@ -537,6 +538,10 @@ namespace RavenPost
             s_upgrade.gameObject.SetActive(true);
             s_upgrade.interactable = affordable;
         }
+
+        /// <summary>", max 200 wt" when this tier has a cargo weight limit.</summary>
+        private static string WeightSuffix(PerchTier tier) =>
+            tier.CargoWeightLimit > 0f ? $", max {tier.CargoWeightLimit:0.#} wt" : "";
 
         private static void OnUpgradeClicked()
         {

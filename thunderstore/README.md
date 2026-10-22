@@ -66,6 +66,8 @@ and speed, and the keys.
 **Balance options** (off by default):
 
 - `Cargo / MaxCargoWeight`: heaviest cargo per flight, for example `500`. `0` = no limit.
+- `Tier N / MaxCargoWeight`: a limit for one tier, so upgrades carry more (for example Wooden `100`,
+  Iron `200`, Deep North `1000`). `0` = use the general limit above.
 - `Limits / MaxFlightsPerPeriod`: ravens each perch can send per period, for example `5`. `0` = unlimited.
 - `Limits / PeriodDays`: period length in in-game days (`1` = per day; sleeping counts).
 - `Limits / LettersCountAsFlights`: whether a letter on its own uses up a flight (off by default).

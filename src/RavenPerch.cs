@@ -289,9 +289,12 @@ namespace RavenPost
 
         private const string FlightLogKey = "ravenpost_flights"; // "<period>:<flights used>"
 
-        public static bool WeightLimited => Plugin.MaxCargoWeight.Value > 0f;
+        /// <summary>This perch's cargo weight limit (from its tier, or the general setting); 0 = none.</summary>
+        public float MaxCargoWeight => Tier.CargoWeightLimit;
 
-        public static bool TooHeavy(float weight) => WeightLimited && weight > Plugin.MaxCargoWeight.Value + 0.001f;
+        public bool WeightLimited => MaxCargoWeight > 0f;
+
+        public bool TooHeavy(float weight) => WeightLimited && weight > MaxCargoWeight + 0.001f;
 
         public static bool FlightsLimited => Plugin.MaxFlightsPerPeriod.Value > 0;
 
@@ -458,7 +461,7 @@ namespace RavenPost
             if (!noteOnly && TooHeavy(weight))
             {
                 player.Message(MessageHud.MessageType.Center,
-                    $"Too heavy for the raven: {weight:0.#} / {Plugin.MaxCargoWeight.Value:0.#}");
+                    $"Too heavy for the raven: {weight:0.#} / {MaxCargoWeight:0.#}");
                 return;
             }
 

@@ -15,8 +15,15 @@ namespace RavenPost
         public ConfigEntry<int> Width;
         public ConfigEntry<int> Height;
         public ConfigEntry<float> Speed;
+        public ConfigEntry<float> MaxWeight;
 
         public float SpeedMultiplier => Mathf.Max(0.1f, Speed.Value);
+
+        /// <summary>
+        /// Heaviest cargo per flight at this tier: the tier's own MaxCargoWeight if set, otherwise the
+        /// general Cargo/MaxCargoWeight. 0 = no limit.
+        /// </summary>
+        public float CargoWeightLimit => MaxWeight.Value > 0f ? MaxWeight.Value : Mathf.Max(0f, Plugin.MaxCargoWeight.Value);
         public int CargoWidth => Mathf.Clamp(Width.Value, 1, 8);
         public int CargoHeight => Mathf.Clamp(Height.Value, 1, 10);
 
@@ -79,6 +86,8 @@ namespace RavenPost
                 Width = config.Bind(section, "CargoWidth", w, Plugin.Synced("Cargo slots per row (max 8).")),
                 Height = config.Bind(section, "CargoHeight", h, Plugin.Synced("Cargo rows (scrolls when tall).")),
                 Speed = config.Bind(section, "Speed", speed, Plugin.Synced("Flight speed multiplier; multiplies with the meal's speed.")),
+                MaxWeight = config.Bind(section, "MaxCargoWeight", 0f, Plugin.Synced(
+                    "Heaviest cargo per flight at this tier, so upgrades can carry more. 0 = use the general Cargo/MaxCargoWeight.")),
             });
         }
 
